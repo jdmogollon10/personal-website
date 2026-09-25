@@ -11,11 +11,11 @@ how long it holds, how fast the video travels to it, and where its glass panel s
 Your name, page title, email and social links.
 
 ### `story/section-XX.md` — the glass panels over the video
-One file per stop, named after its timestamp (`section-06.md` = the 00:06 stop).
+One file per stop, named after its timestamp (`section-24.md` = the 00:24 stop).
 
 ```md
 ---
-eyebrow: "00:24"            # small label above the title (quote it if it has a colon)
+eyebrow: Optional label      # small label above the title (quote it if it has a colon)
 title: Learning from the best
 subtitle: Optional line     # used by the hero
 links:                      # optional buttons

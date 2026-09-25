@@ -22,7 +22,7 @@
   --glass-padding: clamp(22px, 2.4vw, 34px);
 
   /* ---- Top progress line ---- */
-  --progress-height: 1.5px;
+  --progress-height: 3px;
   --progress-color: rgba(255, 255, 255, 0.85);
   --progress-track: rgba(255, 255, 255, 0.06);
   --progress-glow: 0 0 10px rgba(255, 255, 255, 0.45);

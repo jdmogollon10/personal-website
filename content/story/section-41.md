@@ -1,5 +1,4 @@
 ---
-eyebrow: "00:41"
 title: The next door
 links:
   - label: Placeholder link

@@ -10,7 +10,8 @@
 //
 //  Each stop:
 //    id        section id; its text lives in content/story/<id>.md
-//    time      second in the video where it settles and holds
+//    time      second in the video where it settles and holds. Written as frame / 24
+//              when it must land on an exact frame (the site plays 24 frames per second).
 //    hold      screens of scroll the video stays frozen here. The panel fades in at the
 //              start of the hold and fades out at the end, while the video is still.
 //    approach  (optional) screens of scroll to travel from the previous stop to this one.
@@ -64,11 +65,11 @@ export const STORY = {
   stops: [
     { id: "section-00", time: 0,  hold: 0.8, hero: true,
       panel: { x: 0.5, y: 0.5, anchor: "center", width: 760 } },
-    { id: "section-06", time: 6,  hold: 1.6,
-      panel: { x: 0.74, y: 0.48, anchor: "center", width: 440 } },
-    { id: "section-09", time: 9,  hold: 1.6,
+    { id: "section-05", time: 137 / 24, hold: 1.6, // 00:05.71 — door fully formed, sharp
+      panel: { x: 0.80, y: 0.48, anchor: "center", width: 440 } },
+    { id: "section-09", time: 231 / 24, hold: 1.6, // 00:09.62 — sharpest before the camera rush
       panel: { x: 0.05, y: 0.10, anchor: "top-left", width: 400 } },
-    { id: "section-13", time: 13, hold: 1.6,
+    { id: "section-14", time: 348 / 24, hold: 1.6, // 00:14.50 — clean wide shot of the team
       panel: { x: 0.95, y: 0.07, anchor: "top-right", width: 400 } },
     { id: "section-16", time: 16, hold: 1.6,
       panel: { x: 0.12, y: 0.52, anchor: "left", width: 420 } },
