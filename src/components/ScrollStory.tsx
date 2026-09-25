@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Lenis from "lenis";
 import { STORY, type Anchor } from "@/config/story";
 import type { FrameManifest, StoryContent } from "@/lib/content";
-import { buildTimeline, panelStateAt, timeAt } from "@/lib/timeline";
+import { buildTimeline, easeInOutSine, panelStateAt, planGlide, restAt, timeAt } from "@/lib/timeline";
 import GlassPanel from "./GlassPanel";
 
 // Frames load coarse-to-fine: every 16th first so the whole video is scrubbable almost
@@ -37,7 +37,6 @@ export default function ScrollStory({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const cueRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
   const [loaded, setLoaded] = useState(0);
@@ -188,8 +187,6 @@ export default function ScrollStory({
         slot.style.visibility = opacity > 0.001 ? "visible" : "hidden";
       });
 
-      if (cueRef.current) cueRef.current.style.opacity = String(Math.max(0, 1 - p / 0.3));
-
       // Top progress line: fills across the cinematic part, then fades as the
       // page leaves the pinned stage.
       if (barRef.current) {
@@ -208,31 +205,50 @@ export default function ScrollStory({
     const scrollable = () => track.offsetHeight - innerHeight;
     const yAt = (p: number) => track.offsetTop + (p / timeline.total) * scrollable();
     const exitY = () => track.offsetTop + track.offsetHeight; // first section after the video
-    const snaps = () => [
-      track.offsetTop,
-      ...timeline.windows.map((w) => yAt((w.start + w.end) / 2)),
-      exitY(),
-    ];
+    const storyEndY = () => track.offsetTop + scrollable(); // last pinned position (black)
+    const snaps = () => [...new Set([track.offsetTop, ...timeline.windows.map((w) => yAt(restAt(w))), exitY()])];
 
+    // A glide is a list of timed legs (px), played back in the rAF loop so the video
+    // runs at STORY.pace.videoSpeed and panels fade at their own pace.
+    type PxLeg = { y0: number; y1: number; duration: number; ease: (u: number) => number };
+    let glide: { legs: PxLeg[]; i: number; legStart: number } | null = null;
     let busy = false;
-    const glideTo = (y: number) => {
-      const screens = Math.abs(y - scrollY) / innerHeight;
-      const { base, perScreen, min, max } = STORY.step;
-      const duration = Math.min(max, Math.max(min, base + perScreen * screens));
+
+    const setScroll = (y: number) => {
+      if (lenis) lenis.scrollTo(y, { immediate: true, force: true });
+      else scrollTo(0, y);
+    };
+
+    const glideTo = (y1: number) => {
+      const y0 = scrollY;
+      const end = storyEndY();
+      const { exitSeconds } = STORY.pace;
+      const pOf = (y: number) => Math.min(timeline.total, Math.max(0, ((y - track.offsetTop) / scrollable()) * timeline.total));
+      const story = (a: number, b: number): PxLeg[] =>
+        planGlide(timeline, pOf(a), pOf(b)).map((l) => ({ y0: yAt(l.from), y1: yAt(l.to), duration: l.duration, ease: l.ease }));
+
+      const legs: PxLeg[] =
+        y1 > y0
+          ? [...story(y0, Math.min(y1, end)), ...(y1 > end ? [{ y0: Math.max(y0, end), y1, duration: exitSeconds, ease: easeInOutSine }] : [])]
+          : [...(y0 > end ? [{ y0, y1: Math.max(y1, end), duration: exitSeconds, ease: easeInOutSine }] : []), ...story(Math.min(y0, end), y1)];
+
+      if (reduceMotion || legs.length === 0) return setScroll(y1);
       busy = true;
-      setTimeout(() => (busy = false), duration * 1000 + 150); // safety net
-      if (lenis) {
-        lenis.scrollTo(y, {
-          duration,
-          easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
-          lock: true,
-          force: true,
-          onComplete: () => (busy = false),
-        });
-      } else {
-        scrollTo({ top: y });
-        busy = false;
+      glide = { legs, i: 0, legStart: performance.now() };
+    };
+
+    const advanceGlide = (now: number) => {
+      if (!glide) return;
+      while (glide.i < glide.legs.length) {
+        const leg = glide.legs[glide.i];
+        const u = leg.duration > 0 ? (now - glide.legStart) / (leg.duration * 1000) : 1;
+        if (u < 1) return setScroll(leg.y0 + (leg.y1 - leg.y0) * leg.ease(u));
+        setScroll(leg.y1);
+        glide.legStart += leg.duration * 1000;
+        glide.i++;
       }
+      glide = null;
+      busy = false;
     };
 
     /** Returns true if the gesture was handled as a scene step. */
@@ -302,6 +318,7 @@ export default function ScrollStory({
 
     let raf = 0;
     const loop = (time: number) => {
+      advanceGlide(performance.now());
       lenis?.raf(time);
       update();
       raf = requestAnimationFrame(loop);
@@ -340,10 +357,6 @@ export default function ScrollStory({
           <canvas ref={canvasRef} className="story-canvas" aria-hidden />
           <div className="story-vignette" aria-hidden />
 
-          <div ref={cueRef} className="intro-cue" aria-hidden>
-            <span /> Scroll
-          </div>
-
           {stops.map((stop, i) => {
             const c = content[stop.id];
             return (
@@ -353,7 +366,7 @@ export default function ScrollStory({
                 ref={(el) => {
                   slotRefs.current[i] = el;
                 }}
-                className="panel-slot"
+                className={`panel-slot ${stop.hero ? "panel-slot--hero" : ""}`}
                 style={{ visibility: "hidden" }}
               >
                 <div
@@ -363,9 +376,17 @@ export default function ScrollStory({
                   className="panel-motion"
                   style={{ opacity: 0 }}
                 >
-                  <GlassPanel className={stop.hero ? "glass--hero" : ""}>
-                    {c ? <PanelContent c={c} hero={stop.hero} /> : <p className="panel-missing">Missing content/story/{stop.id}.md</p>}
-                  </GlassPanel>
+                  {!c ? (
+                    <GlassPanel>
+                      <p className="panel-missing">Missing content/story/{stop.id}.md</p>
+                    </GlassPanel>
+                  ) : stop.hero ? (
+                    <HeroContent c={c} />
+                  ) : (
+                    <GlassPanel>
+                      <PanelContent c={c} />
+                    </GlassPanel>
+                  )}
                 </div>
               </div>
             );
@@ -382,12 +403,26 @@ export default function ScrollStory({
   );
 }
 
-function PanelContent({ c, hero }: { c: StoryContent; hero?: boolean }) {
-  const Title = hero ? "h1" : "h2";
+// Title at the start of the video: no glass, styled like the portfolio sections.
+function HeroContent({ c }: { c: StoryContent }) {
+  return (
+    <div className="hero">
+      {c.eyebrow && <p className="eyebrow">{c.eyebrow}</p>}
+      <h1 className="hero-title">{c.title}</h1>
+      {c.subtitle && <p className="hero-subtitle">{c.subtitle}</p>}
+      <div className="prose hero-prose" dangerouslySetInnerHTML={{ __html: c.html }} />
+      <p className="hero-cue" aria-hidden>
+        <span /> Scroll
+      </p>
+    </div>
+  );
+}
+
+function PanelContent({ c }: { c: StoryContent }) {
   return (
     <>
       {c.eyebrow && <p className="panel-eyebrow">{c.eyebrow}</p>}
-      <Title className={hero ? "panel-title panel-title--hero" : "panel-title"}>{c.title}</Title>
+      {c.title && <h2 className="panel-title">{c.title}</h2>}
       {c.subtitle && <p className="panel-subtitle">{c.subtitle}</p>}
       <div className="prose" dangerouslySetInnerHTML={{ __html: c.html }} />
       {c.links.length > 0 && (
@@ -398,11 +433,6 @@ function PanelContent({ c, hero }: { c: StoryContent; hero?: boolean }) {
             </a>
           ))}
         </div>
-      )}
-      {hero && (
-        <p className="panel-cue" aria-hidden>
-          <span /> Scroll to begin
-        </p>
       )}
     </>
   );

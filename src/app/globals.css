@@ -99,23 +99,8 @@ html.lenis body {
   background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
 }
 
-.intro-cue {
-  position: absolute;
-  left: 50%;
-  bottom: 7vh;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.8rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: var(--muted);
-  pointer-events: none;
-}
-.intro-cue span,
-.panel-cue span {
+.panel-cue span,
+.hero-cue span {
   width: 1px;
   height: 40px;
   background: linear-gradient(rgba(255, 255, 255, 0.8), transparent);
@@ -144,11 +129,54 @@ html.lenis body {
   width: auto !important;
   max-width: none;
 }
+.story-stage[data-docked] .panel-slot--hero {
+  top: 50% !important;
+  bottom: auto;
+  transform: translateY(-50%);
+}
 /* Docked panels often sit over bright parts of the frame: darken the glass a touch. */
 .story-stage[data-docked] .glass {
   --glass-bg: rgba(12, 10, 8, 0.38);
   --glass-bg-top: rgba(255, 255, 255, 0.08);
   --glass-blur: 18px;
+}
+
+/* ---------- Title at 00:00 (same typography as the portfolio sections) ---------- */
+.hero {
+  text-align: center;
+}
+.hero .eyebrow {
+  margin-bottom: 1.4rem;
+}
+.hero-title {
+  font-family: var(--font-serif), serif;
+  font-weight: 400;
+  font-size: clamp(3rem, 8vw, 6.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.hero-subtitle {
+  margin-top: 1.4rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+  opacity: 0.85;
+}
+.hero-prose {
+  max-width: 34rem;
+  margin: 1rem auto 0;
+}
+.hero-cue {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 3rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 /* ---------- Glass panel ---------- */
@@ -393,7 +421,7 @@ html.lenis body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .intro-cue span,
+  .hero-cue span,
   .panel-cue span {
     animation: none;
   }
