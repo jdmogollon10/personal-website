@@ -1,0 +1,9 @@
+node_modules/
+.next/
+dist/
+.DS_Store
+.env*
+.vercel/
+
+# raw source media (too large for GitHub)
+source-media/
