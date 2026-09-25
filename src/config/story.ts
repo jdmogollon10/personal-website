@@ -53,7 +53,7 @@ export const STORY = {
   /** Timing of the glide between scenes. */
   pace: {
     /** Average playback speed while travelling between stops (1 = real time). */
-    videoSpeed: 1.1,
+    videoSpeed: 1.21,
     /** Seconds to speed up from / slow down into a stop. */
     ramp: 0.6,
     /** Seconds for a panel to fade out (leaving a stop) and fade in (arriving). */
