@@ -200,6 +200,106 @@ export default function ScrollStory({
     };
 
     const lenis = reduceMotion ? null : new Lenis({ lerp: 0.08, wheelMultiplier: 0.85 });
+
+    // ---- scene stepping ------------------------------------------------------
+    // Inside the story, one gesture (wheel flick, swipe, arrow key) glides to the
+    // next/previous stop instead of scrolling freely. Past the video, the page
+    // scrolls normally; scrolling back up from there returns to the last stop.
+    const scrollable = () => track.offsetHeight - innerHeight;
+    const yAt = (p: number) => track.offsetTop + (p / timeline.total) * scrollable();
+    const exitY = () => track.offsetTop + track.offsetHeight; // first section after the video
+    const snaps = () => [
+      track.offsetTop,
+      ...timeline.windows.map((w) => yAt((w.start + w.end) / 2)),
+      exitY(),
+    ];
+
+    let busy = false;
+    const glideTo = (y: number) => {
+      const screens = Math.abs(y - scrollY) / innerHeight;
+      const { base, perScreen, min, max } = STORY.step;
+      const duration = Math.min(max, Math.max(min, base + perScreen * screens));
+      busy = true;
+      setTimeout(() => (busy = false), duration * 1000 + 150); // safety net
+      if (lenis) {
+        lenis.scrollTo(y, {
+          duration,
+          easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+          lock: true,
+          force: true,
+          onComplete: () => (busy = false),
+        });
+      } else {
+        scrollTo({ top: y });
+        busy = false;
+      }
+    };
+
+    /** Returns true if the gesture was handled as a scene step. */
+    const step = (dir: 1 | -1) => {
+      const y = scrollY;
+      const end = exitY();
+      // Below the story: only an upward gesture right at its edge re-enters it.
+      if (y > end + 2 || (y >= end - 2 && dir === 1)) return false;
+      if (busy) return true;
+      const list = snaps();
+      const target = dir === 1 ? list.find((s) => s > y + 4) : [...list].reverse().find((s) => s < y - 4);
+      if (target === undefined) return false;
+      glideTo(target);
+      return true;
+    };
+
+    // Wheel: a trackpad swipe fires a long stream of events (with momentum), so
+    // each continuous stream counts as one gesture = one step.
+    let lastWheel = 0;
+    let gestureUsed = false;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return; // pinch-zoom / sideways
+      const now = performance.now();
+      if (now - lastWheel > 200) gestureUsed = false;
+      lastWheel = now;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      const y = scrollY, end = exitY();
+      const inStory = y < end - 2 || (y <= end + 2 && dir === -1);
+      if (!inStory) return;
+      e.preventDefault();
+      e.stopPropagation(); // keep Lenis from free-scrolling
+      if (gestureUsed || busy || Math.abs(e.deltaY) < 2) return;
+      if (step(dir)) gestureUsed = true;
+    };
+
+    let touchY: number | null = null;
+    const onTouchStart = (e: TouchEvent) => {
+      touchY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (touchY === null) return;
+      const dir = touchY - e.touches[0].clientY > 0 ? 1 : -1;
+      const y = scrollY, end = exitY();
+      if (y < end - 2 || (y <= end + 2 && dir === -1)) e.preventDefault();
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (touchY === null) return;
+      const dy = touchY - e.changedTouches[0].clientY;
+      touchY = null;
+      if (Math.abs(dy) > 30) step(dy > 0 ? 1 : -1);
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLElement && e.target.closest("input, textarea, [contenteditable]")) return;
+      const dir =
+        ["ArrowDown", "PageDown", " "].includes(e.key) && !e.shiftKey ? 1
+        : ["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey) ? -1
+        : 0;
+      if (dir && step(dir)) e.preventDefault();
+    };
+
+    addEventListener("wheel", onWheel, { passive: false, capture: true });
+    addEventListener("touchstart", onTouchStart, { passive: true });
+    addEventListener("touchmove", onTouchMove, { passive: false });
+    addEventListener("touchend", onTouchEnd);
+    addEventListener("keydown", onKey);
+
     let raf = 0;
     const loop = (time: number) => {
       lenis?.raf(time);
@@ -215,6 +315,11 @@ export default function ScrollStory({
       cancelled = true;
       cancelAnimationFrame(raf);
       removeEventListener("resize", resize);
+      removeEventListener("wheel", onWheel, { capture: true });
+      removeEventListener("touchstart", onTouchStart);
+      removeEventListener("touchmove", onTouchMove);
+      removeEventListener("touchend", onTouchEnd);
+      removeEventListener("keydown", onKey);
       lenis?.destroy();
     };
   }, [manifest, timeline, stops]);

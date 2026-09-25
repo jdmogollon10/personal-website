@@ -44,6 +44,12 @@ export const STORY = {
   /** Screens of scroll spent travelling from the last stop to the black ending. */
   outro: 2.0,
 
+  /**
+   * Scene stepping: one scroll/swipe/arrow key glides to the next stop.
+   * Transition time = base + perScreen × distance, clamped to [min, max] seconds.
+   */
+  step: { base: 0.8, perScreen: 0.42, min: 1.1, max: 3.2 },
+
   stops: [
     { id: "section-06", time: 6,  hold: 1.8, approach: 1.4, hero: true,
       panel: { x: 0.74, y: 0.48, anchor: "center", width: 520 } },
