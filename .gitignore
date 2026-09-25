@@ -7,3 +7,8 @@ dist/
 
 # raw source media (too large for GitHub)
 source-media/
+
+# next
+next-env.d.ts
+*.tsbuildinfo
+/out/

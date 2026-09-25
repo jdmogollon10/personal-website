@@ -1,0 +1,400 @@
+@import "tailwindcss";
+
+:root {
+  /* Pure black so the video's final frame and the page are indistinguishable. */
+  --bg: #000;
+  --fg: #f6f2ec;
+  --muted: rgba(246, 242, 236, 0.68);
+  --faint: rgba(246, 242, 236, 0.12);
+  --accent: #f5c48a;
+  --gutter: clamp(20px, 5vw, 72px);
+
+  /* ---- Glass panel: tweak these to restyle every story panel at once ---- */
+  --glass-bg: rgba(255, 255, 255, 0.055);
+  --glass-bg-top: rgba(255, 255, 255, 0.09);
+  --glass-blur: 14px;
+  --glass-saturate: 1.2;
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.22);
+  --glass-glow: 0 0 60px rgba(255, 236, 214, 0.06);
+  --glass-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  --glass-radius: 14px;
+  --glass-padding: clamp(22px, 2.4vw, 34px);
+
+  /* ---- Top progress line ---- */
+  --progress-height: 1.5px;
+  --progress-color: rgba(255, 255, 255, 0.85);
+  --progress-track: rgba(255, 255, 255, 0.06);
+  --progress-glow: 0 0 10px rgba(255, 255, 255, 0.45);
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+}
+
+html,
+body {
+  background: var(--bg);
+}
+body {
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+::selection {
+  background: rgba(255, 255, 255, 0.85);
+  color: #000;
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+
+/* ---------- Progress line ---------- */
+.progress-line {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--progress-height);
+  background: var(--progress-track);
+  z-index: 50;
+  pointer-events: none;
+}
+.progress-line div {
+  height: 100%;
+  background: var(--progress-color);
+  box-shadow: var(--progress-glow);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+/* ---------- Scroll story ---------- */
+.story {
+  position: relative;
+}
+.story-stage {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+.story-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.story-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.intro-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 7vh;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: none;
+}
+.intro-cue span,
+.panel-cue span {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(rgba(255, 255, 255, 0.8), transparent);
+  animation: cue 2.2s ease-in-out infinite;
+  transform-origin: top;
+}
+@keyframes cue {
+  0% { transform: scaleY(0); opacity: 1; }
+  60% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+/* Panel slot = position (set by JS from src/config/story.ts); motion = fade/slide. */
+.panel-slot {
+  position: absolute;
+  max-width: calc(100vw - 48px);
+}
+.panel-motion {
+  will-change: opacity, transform;
+}
+.story-stage[data-docked] .panel-slot {
+  left: 16px !important;
+  right: 16px;
+  top: auto !important;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: auto !important;
+  max-width: none;
+}
+/* Docked panels often sit over bright parts of the frame: darken the glass a touch. */
+.story-stage[data-docked] .glass {
+  --glass-bg: rgba(12, 10, 8, 0.38);
+  --glass-bg-top: rgba(255, 255, 255, 0.08);
+  --glass-blur: 18px;
+}
+
+/* ---------- Glass panel ---------- */
+.glass {
+  position: relative;
+  padding: var(--glass-padding);
+  border-radius: var(--glass-radius);
+  background: linear-gradient(160deg, var(--glass-bg-top), var(--glass-bg) 45%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-glow), inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+.panel-eyebrow,
+.eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.9rem;
+}
+.panel-title {
+  font-family: var(--font-serif), serif;
+  font-weight: 400;
+  font-size: clamp(1.9rem, 3vw, 2.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin-bottom: 0.9rem;
+}
+.panel-title--hero {
+  font-size: clamp(2.6rem, 5vw, 4.4rem);
+  line-height: 0.95;
+}
+.panel-subtitle {
+  font-size: 0.95rem;
+  color: var(--fg);
+  opacity: 0.85;
+  margin-bottom: 0.9rem;
+}
+.panel-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+}
+.panel-cue {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1.6rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.panel-cue span {
+  height: 28px;
+}
+.panel-missing {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.prose {
+  color: var(--muted);
+  font-size: clamp(0.95rem, 1.05vw, 1.05rem);
+  line-height: 1.65;
+}
+.prose p + p {
+  margin-top: 0.9em;
+}
+.prose strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+.prose a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 3px;
+}
+.prose--wide {
+  max-width: 44rem;
+  font-size: 1.1rem;
+}
+
+.pill {
+  display: inline-flex;
+  gap: 0.5em;
+  align-items: center;
+  padding: 0.6em 1.1em;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.2s, border-color 0.2s;
+}
+.pill:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.loader {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  transition: opacity 1s ease, visibility 1s;
+}
+.loader--done {
+  opacity: 0;
+  visibility: hidden;
+}
+.loader-track {
+  width: 140px;
+  height: 1px;
+  background: var(--faint);
+}
+.loader-track div {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  transform-origin: left;
+  transition: transform 0.2s;
+}
+
+/* ---------- After the video (continues the black ending) ---------- */
+.more {
+  position: relative;
+  padding: 0 var(--gutter);
+  background: var(--bg);
+}
+.more-section {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: clamp(90px, 16vh, 180px) 0;
+  border-top: 1px solid var(--faint);
+}
+.more-section:first-child {
+  border-top: 0;
+  padding-top: clamp(40px, 10vh, 120px);
+}
+.more-title {
+  font-family: var(--font-serif), serif;
+  font-weight: 400;
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.015em;
+  margin-bottom: 1.8rem;
+  text-wrap: balance;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+  margin-top: 2.4rem;
+}
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: 100%;
+  padding: 1.6rem;
+  border-radius: var(--glass-radius);
+  border: 1px solid var(--faint);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  transition: border-color 0.25s, transform 0.25s, background 0.25s;
+}
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+  transform: translateY(-3px);
+}
+.card-tag {
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.card-label {
+  font-size: 1.2rem;
+  font-weight: 500;
+  padding-right: 2rem;
+}
+.card-note {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.card-arrow {
+  position: absolute;
+  top: 1.4rem;
+  right: 1.5rem;
+  color: var(--muted);
+  transition: transform 0.25s;
+}
+.card:hover .card-arrow {
+  transform: translate(2px, -2px);
+}
+
+.contact {
+  margin-top: 2.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+.contact-email {
+  font-family: var(--font-serif), serif;
+  font-size: clamp(1.8rem, 4.5vw, 3.4rem);
+  width: fit-content;
+  border-bottom: 1px solid var(--faint);
+  transition: border-color 0.2s;
+  overflow-wrap: anywhere;
+}
+.contact-email:hover {
+  border-color: var(--fg);
+}
+.contact-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.8rem;
+  color: var(--muted);
+}
+.contact-socials a:hover {
+  color: var(--fg);
+}
+
+.footer {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--faint);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.missing-frames {
+  padding: 4rem var(--gutter);
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-cue span,
+  .panel-cue span {
+    animation: none;
+  }
+}
