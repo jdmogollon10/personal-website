@@ -13,6 +13,7 @@ const FIRST_PASS = 16;
 const CONCURRENCY = 8;
 const MARGIN = 24; // min px between a panel and the viewport edge
 const MOBILE_MARGIN = 16;
+const FEATHER = 64; // px of fade where a letterboxed mobile frame meets the black
 const DOCK_BELOW = 768; // px width below which panels use phone placement
 
 const frameUrl = (base: string, i: number) => `${base}/${String(i + 1).padStart(4, "0")}.webp`;
@@ -129,14 +130,32 @@ export default function ScrollStory({
       return -1;
     };
 
-    // The rectangle the frame occupies on screen (object-fit: cover), in CSS px.
+    // The rectangle the frame occupies on screen, in CSS px.
     let cover = { x: 0, y: 0, w: innerWidth, h: innerHeight };
 
     function render(force = false) {
       const idx = nearest(frameAt(progress()));
       if (idx < 0 || (idx === drawn && !force)) return;
       const dpr = canvas.width / innerWidth;
-      ctx.drawImage(frames[idx]!, cover.x * dpr, cover.y * dpr, cover.w * dpr, cover.h * dpr);
+      const { x, y, w, h } = cover;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(frames[idx]!, x * dpr, y * dpr, w * dpr, h * dpr);
+      // When the frame is shorter than the screen, feather its top and bottom edges
+      // into the black above and below so there's no hard line.
+      if (y > 0.5) {
+        const f = Math.min(FEATHER, h / 4) * dpr;
+        const top = ctx.createLinearGradient(0, y * dpr, 0, y * dpr + f);
+        top.addColorStop(0, "#000");
+        top.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = top;
+        ctx.fillRect(0, y * dpr, canvas.width, f);
+        const bottom = ctx.createLinearGradient(0, (y + h) * dpr - f, 0, (y + h) * dpr);
+        bottom.addColorStop(0, "rgba(0,0,0,0)");
+        bottom.addColorStop(1, "#000");
+        ctx.fillStyle = bottom;
+        ctx.fillRect(0, (y + h) * dpr - f, canvas.width, f);
+      }
       drawn = idx;
     }
 
@@ -171,7 +190,10 @@ export default function ScrollStory({
       const dpr = Math.min(devicePixelRatio || 1, 2);
       canvas.width = Math.round(innerWidth * dpr);
       canvas.height = Math.round(innerHeight * dpr);
-      const scale = Math.max(innerWidth / set.width, innerHeight / set.height);
+      // Desktop video fills the screen (cropping as needed). The mobile video is already
+      // framed for phones, so it is never cropped sideways: it always spans the full
+      // width, and any leftover height becomes black above/below.
+      const scale = portrait ? innerWidth / set.width : Math.max(innerWidth / set.width, innerHeight / set.height);
       const w = set.width * scale, h = set.height * scale;
       cover = { x: (innerWidth - w) / 2, y: (innerHeight - h) / 2, w, h };
       place();

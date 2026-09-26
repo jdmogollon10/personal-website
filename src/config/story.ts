@@ -27,7 +27,9 @@
 //    mobile    where the panel sits on phones / portrait screens, which show the mobile
 //              video (same timing, reframed to 9:16). Same idea as `panel`, in that
 //              video's frame coordinates. `x` defaults to 0.5 and `width` to the full
-//              screen width (minus a 16px margin each side).
+//              screen width (minus a 16px margin each side). The mobile video is never
+//              cropped sideways, so on tall phones there is black above and below it;
+//              y > 1 (e.g. 1.1 with anchor "bottom") drops the panel into that space.
 
 export type Anchor =
   | "top-left" | "top" | "top-right"
@@ -72,30 +74,30 @@ export const STORY = {
       mobile: { y: 0.5, anchor: "center" } },
     { id: "section-05", time: 137 / 24, hold: 1.6, // 00:05.71 — door fully formed, sharp
       panel: { x: 0.80, y: 0.48, anchor: "center", width: 440 },
-      mobile: { y: 0.95, anchor: "bottom" } },
+      mobile: { y: 1.1, anchor: "bottom" } },
     { id: "section-09", time: 231 / 24, hold: 1.6, // 00:09.62 — sharpest before the camera rush
       panel: { x: 0.05, y: 0.10, anchor: "top-left", width: 400 },
-      mobile: { y: 0.95, anchor: "bottom" } },
+      mobile: { y: 1.1, anchor: "bottom" } },
     { id: "section-14", time: 348 / 24, hold: 1.6, // 00:14.50 — clean wide shot of the team
       panel: { x: 0.95, y: 0.07, anchor: "top-right", width: 400 },
-      mobile: { y: 0.95, anchor: "bottom" } },
+      mobile: { y: 1.1, anchor: "bottom" } },
     { id: "section-16", time: 16, hold: 1.6,
       panel: { x: 0.12, y: 0.52, anchor: "left", width: 420 },
-      mobile: { x: 0.1, y: 0.05, anchor: "top-left", width: 240 } },
+      mobile: { x: 0.04, y: 1.1, anchor: "bottom-left", width: 210 } },
     { id: "section-24", time: 24, hold: 1.6,
       panel: { x: 0.06, y: 0.14, anchor: "top-left", width: 420 },
-      mobile: { y: 0.96, anchor: "bottom" } },
+      mobile: { y: 1.1, anchor: "bottom" } },
     { id: "section-29", time: 29, hold: 1.6,
       panel: { x: 0.96, y: 0.50, anchor: "right", width: 400 },
-      mobile: { y: 0.95, anchor: "bottom" } },
+      mobile: { y: 1.1, anchor: "bottom" } },
     { id: "section-32", time: 32, hold: 1.6,
       panel: { x: 0.265, y: 0.04, anchor: "top-left", width: 330 },
-      mobile: { x: 0.1, y: 0.04, anchor: "top-left", width: 280 } },
+      mobile: { x: 0.04, y: -0.1, anchor: "top-left", width: 300 } },
     { id: "section-35", time: 35, hold: 1.6,
       panel: { x: 0.03, y: 0.50, anchor: "left", width: 360 },
-      mobile: { y: 0.95, anchor: "bottom" } },
+      mobile: { y: 1.1, anchor: "bottom" } },
     { id: "section-41", time: 41, hold: 1.8,
       panel: { x: 0.05, y: 0.30, anchor: "left", width: 400 },
-      mobile: { y: 0.95, anchor: "bottom" } },
+      mobile: { y: 1.1, anchor: "bottom" } },
   ] satisfies StoryStop[] as StoryStop[],
 };
