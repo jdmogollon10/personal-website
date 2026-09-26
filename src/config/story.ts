@@ -89,7 +89,7 @@ export const STORY = {
     { id: "section-17", time: 403 / 24, hold: 1.6, // 00:16.79 — close-up
       panel: { x: 0.235, y: 0.50, anchor: "left", width: 340 },
       mobile: { x: 0.04, y: 1.1, anchor: "bottom-left", width: 210 } },
-    { id: "section-20", time: 489 / 24, hold: 1.6, speed: 1.2, // 00:20.38 — back on the island
+    { id: "section-20", time: 502 / 24, hold: 1.6, speed: 1.2, // 00:20.92 — matched to your reference screenshot
       panel: { x: 0.965, y: 0.50, anchor: "right", width: 300 },
       mobile: { y: 1.1, anchor: "bottom" } },
     { id: "section-25", time: 596 / 24, hold: 1.6, // 00:24.83 — mentor at the laptop
