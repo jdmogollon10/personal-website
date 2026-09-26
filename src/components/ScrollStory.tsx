@@ -411,7 +411,7 @@ export default function ScrollStory({
                   ) : stop.hero ? (
                     <HeroContent c={c} />
                   ) : (
-                    <GlassPanel>
+                    <GlassPanel className={stop.glass === "dark" ? "glass--dark" : ""}>
                       <PanelContent c={c} />
                     </GlassPanel>
                   )}

@@ -7,7 +7,7 @@
 import { STORY, type StoryStop } from "@/config/story";
 
 type Segment =
-  | { kind: "play"; start: number; end: number; t0: number; t1: number }
+  | { kind: "play"; start: number; end: number; t0: number; t1: number; speed: number }
   | { kind: "hold"; start: number; end: number; t0: number };
 
 export type Timeline = {
@@ -22,16 +22,16 @@ export function buildTimeline(stops: StoryStop[] = STORY.stops): Timeline {
   let pos = 0;
   let t = 0;
 
-  const play = (to: number, length?: number) => {
+  const play = (to: number, length?: number, speed = 1) => {
     if (to <= t) return;
     const len = length ?? (to - t) / STORY.secondsPerScreen;
-    segments.push({ kind: "play", start: pos, end: pos + len, t0: t, t1: to });
+    segments.push({ kind: "play", start: pos, end: pos + len, t0: t, t1: to, speed });
     pos += len;
     t = to;
   };
 
   for (const s of [...stops].sort((a, b) => a.time - b.time)) {
-    play(s.time, s.approach);
+    play(s.time, s.approach, s.speed);
     // A stop at the very start is already faded in when the page loads.
     const start = pos === 0 ? -STORY.fade : pos;
     windows.push({ start, end: pos + s.hold });
@@ -100,21 +100,25 @@ export function planGlide(tl: Timeline, p0: number, p1: number): Leg[] {
 
   const pieces = tl.segments
     .filter((s) => s.end > lo && s.start < hi)
-    .map((s) => ({ kind: s.kind, a: Math.max(s.start, lo), b: Math.min(s.end, hi) }));
+    .map((s) => ({ kind: s.kind, a: Math.max(s.start, lo), b: Math.min(s.end, hi), speed: s.kind === "play" ? s.speed : 1 }));
   if (p1 < p0) pieces.reverse().forEach((pc) => ([pc.a, pc.b] = [pc.b, pc.a]));
 
   // Merge neighbours of the same kind.
-  const merged: { kind: Segment["kind"]; a: number; b: number }[] = [];
+  // Merge neighbours of the same kind (play pieces keep their summed duration).
+  const merged: { kind: Segment["kind"]; a: number; b: number; seconds: number }[] = [];
   for (const pc of pieces) {
+    const seconds = pc.kind === "play" ? Math.abs(timeAt(tl, pc.b) - timeAt(tl, pc.a)) / (videoSpeed * pc.speed) : 0;
     const last = merged[merged.length - 1];
-    if (last && last.kind === pc.kind) last.b = pc.b;
-    else merged.push({ ...pc });
+    if (last && last.kind === pc.kind) {
+      last.b = pc.b;
+      last.seconds += seconds;
+    } else merged.push({ kind: pc.kind, a: pc.a, b: pc.b, seconds });
   }
 
   const dir = Math.sign(p1 - p0);
-  return merged.flatMap(({ kind, a, b }, i): Leg[] => {
+  return merged.flatMap(({ kind, a, b, seconds }, i): Leg[] => {
     if (kind === "play") {
-      const duration = Math.abs(timeAt(tl, b) - timeAt(tl, a)) / videoSpeed;
+      const duration = seconds;
       return [{ from: a, to: b, duration, ease: trapezoid(Math.min(0.45, ramp / Math.max(duration, 1e-3))) }];
     }
     // Hold: nothing changes on screen except near the edge where the panel fades,

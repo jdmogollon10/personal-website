@@ -191,6 +191,14 @@ html.lenis body {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
+/* Smoky variant for panels over bright frames (set glass: "dark" on the stop). */
+.glass--dark {
+  --glass-bg: rgba(14, 10, 6, 0.46);
+  --glass-bg-top: rgba(30, 22, 14, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --glass-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+
 .panel-eyebrow,
 .eyebrow {
   font-size: 0.7rem;
