@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Lets phones on the same Wi-Fi load the dev server via this Mac's network address.
+  // Development only; has no effect on the deployed site.
+  allowedDevOrigins: ["192.168.109.184"],
 };
 
 export default nextConfig;
