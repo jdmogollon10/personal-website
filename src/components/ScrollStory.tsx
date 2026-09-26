@@ -12,7 +12,8 @@ import GlassPanel from "./GlassPanel";
 const FIRST_PASS = 16;
 const CONCURRENCY = 8;
 const MARGIN = 24; // min px between a panel and the viewport edge
-const DOCK_BELOW = 768; // px width below which panels dock to the bottom
+const MOBILE_MARGIN = 16;
+const DOCK_BELOW = 768; // px width below which panels use phone placement
 
 const frameUrl = (base: string, i: number) => `${base}/${String(i + 1).padStart(4, "0")}.webp`;
 
@@ -140,24 +141,29 @@ export default function ScrollStory({
     }
 
     // ---- panel placement -----------------------------------------------------
+    // Desktop: `panel` in the 16:9 frame. Portrait: `mobile` in the 9:16 frame (full width
+    // unless it sets one). Narrow landscape windows fall back to a bottom dock (CSS).
     const place = () => {
       const docked = innerWidth < DOCK_BELOW || portrait;
+      const margin = docked ? MOBILE_MARGIN : MARGIN;
       stage.toggleAttribute("data-docked", docked);
       stops.forEach((stop, i) => {
         const slot = slotRefs.current[i];
         if (!slot) return;
-        const maxW = innerWidth - MARGIN * 2;
-        slot.style.width = `${Math.min(stop.panel.width, maxW)}px`;
-        if (docked) {
-          slot.style.left = slot.style.top = "";
+        const spot = portrait ? stop.mobile : docked ? undefined : stop.panel;
+        slot.toggleAttribute("data-placed", !!spot);
+        if (!spot) {
+          slot.style.left = slot.style.top = slot.style.width = "";
           return;
         }
-        const [ax, ay] = ANCHORS[stop.panel.anchor];
+        const maxW = innerWidth - margin * 2;
+        slot.style.width = `${Math.min(spot.width ?? maxW, maxW)}px`;
+        const [ax, ay] = ANCHORS[spot.anchor];
         const w = slot.offsetWidth, h = slot.offsetHeight;
-        const px = cover.x + stop.panel.x * cover.w - ax * w;
-        const py = cover.y + stop.panel.y * cover.h - ay * h;
-        slot.style.left = `${Math.min(Math.max(px, MARGIN), innerWidth - w - MARGIN)}px`;
-        slot.style.top = `${Math.min(Math.max(py, MARGIN), innerHeight - h - MARGIN)}px`;
+        const px = cover.x + (spot.x ?? 0.5) * cover.w - ax * w;
+        const py = cover.y + spot.y * cover.h - ay * h;
+        slot.style.left = `${Math.min(Math.max(px, margin), innerWidth - w - margin)}px`;
+        slot.style.top = `${Math.min(Math.max(py, margin), innerHeight - h - margin)}px`;
       });
     };
 

@@ -121,7 +121,7 @@ html.lenis body {
 .panel-motion {
   will-change: opacity, transform;
 }
-.story-stage[data-docked] .panel-slot {
+.story-stage[data-docked] .panel-slot:not([data-placed]) {
   left: 16px !important;
   right: 16px;
   top: auto !important;
@@ -129,7 +129,7 @@ html.lenis body {
   width: auto !important;
   max-width: none;
 }
-.story-stage[data-docked] .panel-slot--hero {
+.story-stage[data-docked] .panel-slot--hero:not([data-placed]) {
   top: 50% !important;
   bottom: auto;
   transform: translateY(-50%);
