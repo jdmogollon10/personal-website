@@ -69,34 +69,37 @@ export const STORY = {
   },
 
   stops: [
-    { id: "section-00", time: 0,  hold: 0.8, hero: true,
+    { id: "section-00", time: 0, hold: 0.8, hero: true,
       panel: { x: 0.5, y: 0.5, anchor: "center", width: 760 },
       mobile: { y: 0.5, anchor: "center" } },
-    { id: "section-05", time: 132 / 24, hold: 1.6, // 00:05.50 — figure facing the formed door
+    { id: "section-06", time: 144 / 24, hold: 1.6, // 00:06.00 — him on the island, facing the door
       panel: { x: 0.80, y: 0.45, anchor: "center", width: 440 },
       mobile: { y: 1.1, anchor: "bottom" } },
-    { id: "section-10", time: 258 / 24, hold: 1.6, // 00:10.75 — first sharp frame past the door
-      panel: { x: 0.95, y: 0.08, anchor: "top-right", width: 400 },
+    { id: "section-08", time: 186 / 24, hold: 1.6, // 00:07.75 — reaching for the door (sharpest near 00:08)
+      panel: { x: 0.97, y: 0.50, anchor: "right", width: 280 },
       mobile: { y: 1.1, anchor: "bottom" } },
-    { id: "section-13", time: 312 / 24, hold: 1.6, // 00:13.00 — team on the island
-      panel: { x: 0.96, y: 0.45, anchor: "right", width: 360 },
+    { id: "section-14", time: 330 / 24, hold: 1.6, // 00:13.75 — team; 14–15s is a blurred camera swoop
+      panel: { x: 0.96, y: 0.50, anchor: "right", width: 360 },
       mobile: { y: 1.1, anchor: "bottom" } },
-    { id: "section-16", time: 395 / 24, hold: 1.6, // 00:16.46 — close-up
+    { id: "section-17", time: 403 / 24, hold: 1.6, // 00:16.79 — close-up
       panel: { x: 0.235, y: 0.50, anchor: "left", width: 340 },
       mobile: { x: 0.04, y: 1.1, anchor: "bottom-left", width: 210 } },
-    { id: "section-24", time: 593 / 24, hold: 1.6, // 00:24.71 — mentor at the laptop
+    { id: "section-21", time: 513 / 24, hold: 1.6, // 00:21.38 — back on the island
+      panel: { x: 0.965, y: 0.50, anchor: "right", width: 300 },
+      mobile: { y: 1.1, anchor: "bottom" } },
+    { id: "section-25", time: 596 / 24, hold: 1.6, // 00:24.83 — mentor at the laptop
       panel: { x: 0.06, y: 0.14, anchor: "top-left", width: 420 },
       mobile: { y: 1.1, anchor: "bottom" } },
-    { id: "section-29", time: 716 / 24, hold: 1.6, // 00:29.83 — desk on the island
+    { id: "section-30", time: 716 / 24, hold: 1.6, // 00:29.83 — desk on the island
       panel: { x: 0.96, y: 0.50, anchor: "right", width: 380 },
       mobile: { y: 1.1, anchor: "bottom" } },
-    { id: "section-33", time: 804 / 24, hold: 1.6, // 00:33.50 — writing at the desk
+    { id: "section-33", time: 793 / 24, hold: 1.6, // 00:33.04 — writing at the desk
       panel: { x: 0.03, y: 0.07, anchor: "top-left", width: 330 },
       mobile: { x: 0.04, y: -0.1, anchor: "top-left", width: 300 } },
     { id: "section-36", time: 866 / 24, hold: 1.6, // 00:36.08 — whiteboard
       panel: { x: 0.04, y: 0.45, anchor: "left", width: 360 },
       mobile: { y: 1.1, anchor: "bottom" } },
-    { id: "section-42", time: 1018 / 24, hold: 1.8, // 00:42.42 — the final door
+    { id: "section-41", time: 978 / 24, hold: 1.8, // 00:40.75 — the final door
       panel: { x: 0.06, y: 0.40, anchor: "left", width: 420 },
       mobile: { y: 1.1, anchor: "bottom" } },
   ] satisfies StoryStop[] as StoryStop[],
