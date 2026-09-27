@@ -2,21 +2,20 @@
 # "Map of me" — the interactive first stop. Edit any text below.
 map:
   hometown:
-    # Placeholder position (roughly the middle of Venezuela). Replace with your
-    # hometown's coordinates, e.g. from Google Maps (right-click → the numbers shown).
-    lat: 7.0
-    lon: -66.0
-    label: "[Hometown]"
+    # Caracas. To move the dot, change the coordinates (Google Maps: right-click → the numbers).
+    lat: 10.4806
+    lon: -66.9036
+    label: Caracas
   destination:
     label: Miami
   items:
     # Upper left
     venezuela:
       label: Venezuela → Miami
-      title: "[Placeholder] From Venezuela to Miami"
+      title: Where I Come From
       body: |
-        [Placeholder] A few sentences about where you grew up, the move to Miami,
-        and what it taught you.
+        Growing up in Venezuela shaped how I see opportunity, family, and hard work.
+        Miami became the place where I began building the next chapter of my life.
 
     # Top
     creative:
@@ -27,7 +26,11 @@ map:
         - title: YouTube creator
         - title: Fashion videographer
         - title: Runway model
-        - title: App creator — my Venezuela app
+        - title: App creator
+          body: |
+            Venezuela Earthquake 2026 humanitarian app I built to help families in Venezuela
+            find missing loved ones. People can post missing-person and survivor profiles,
+            share information, and report possible matches to help bring families back together.
 
     # Lower left — content to be decided.
     interests:

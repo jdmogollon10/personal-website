@@ -17,6 +17,8 @@ const pct = (v: number) => `${(v * 100).toFixed(3)}%`;
 
 export default function MapOfMe({ map }: { map: MapContent }) {
   const [open, setOpen] = useState<MapItemId | null>(null);
+  // Bubbles softly light up in turn until the visitor opens one; then they know.
+  const [explored, setExplored] = useState(false);
 
   // Close when the visitor moves on (ScrollStory announces every glide) or presses Esc.
   useEffect(() => {
@@ -31,10 +33,13 @@ export default function MapOfMe({ map }: { map: MapContent }) {
   }, []);
 
   const { callouts, detail } = MAP_OF_ME;
-  const toggle = (id: MapItemId) => setOpen((cur) => (cur === id ? null : id));
+  const toggle = (id: MapItemId) => {
+    setExplored(true);
+    setOpen((cur) => (cur === id ? null : id));
+  };
 
   return (
-    <div className="map" data-open={open ?? undefined}>
+    <div className={`map ${explored ? "is-explored" : ""}`} data-open={open ?? undefined}>
       <svg className="map-lines" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden>
         {ORDER.map((id) => (
           <line
@@ -60,14 +65,14 @@ export default function MapOfMe({ map }: { map: MapContent }) {
       ))}
 
       <div className="map-callouts" role="group" aria-label="About me">
-        {ORDER.map((id) => {
+        {ORDER.map((id, i) => {
           const c = callouts[id];
           return (
             <button
               key={id}
               type="button"
               className={`map-callout map-callout--${c.side} ${open && open !== id ? "is-dim" : ""} ${open === id ? "is-active" : ""}`}
-              style={{ left: pct(c.to.x), top: pct(c.to.y) }}
+              style={{ left: pct(c.to.x), top: pct(c.to.y), "--i": i } as CSSProperties}
               aria-expanded={open === id}
               aria-controls="map-detail"
               onClick={() => toggle(id)}
@@ -109,22 +114,14 @@ export default function MapOfMe({ map }: { map: MapContent }) {
   );
 }
 
+// Every bubble leads with the same glowing dot; Venezuela also shows its outline.
 function Cue({ id, map }: { id: MapItemId; map: MapContent }) {
-  if (id === "venezuela") return <VenezuelaMini hometown={map.hometown} />;
-  if (id === "sports")
-    return (
-      <svg className="cue-frame" viewBox="0 0 22 16" aria-hidden>
-        <rect x="0.5" y="0.5" width="21" height="15" rx="2" />
-        <path d="M3 12l5-5 4 4 3-3 4 4" />
-      </svg>
-    );
-  if (id === "creative")
-    return (
-      <svg className="cue-frame" viewBox="0 0 16 16" aria-hidden>
-        <path d="M8 1.5l1.7 4.8 4.8 1.7-4.8 1.7L8 14.5l-1.7-4.8L1.5 8l4.8-1.7z" />
-      </svg>
-    );
-  return <span className="cue-dot" aria-hidden />;
+  return (
+    <>
+      <span className="cue-dot" aria-hidden />
+      {id === "venezuela" && <VenezuelaMini hometown={map.hometown} />}
+    </>
+  );
 }
 
 function VenezuelaMini({ hometown }: { hometown: MapContent["hometown"] }) {
@@ -183,7 +180,8 @@ function Journey({ map }: { map: MapContent }) {
       <circle className="j-dot" cx={hx} cy={hy} r={3.5} />
       <circle className="j-dot j-dot--dest" cx={mx} cy={my} r={3.5} />
       {map.hometown.label && (
-        <text x={hx + 8} y={hy + 4} className="j-label">
+        // Below-right of the dot, inside the country: clear of the coastline and the route.
+        <text x={hx + 5} y={hy + 13} className="j-label">
           {map.hometown.label}
         </text>
       )}

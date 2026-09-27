@@ -435,6 +435,23 @@ html.lenis body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+/* "You can click me": each bubble slowly lights up in turn, until one is opened. */
+.map:not(.is-explored):not([data-open]) .map-chip {
+  animation: chip-glow 4.8s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 1.2s);
+}
+@keyframes chip-glow {
+  0%, 60%, 100% {
+    border-color: var(--glass-border);
+    box-shadow: 0 0 0 rgba(255, 236, 214, 0);
+    background: rgba(255, 255, 255, 0.05);
+  }
+  25% {
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 0 22px rgba(255, 236, 214, 0.28);
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
 .map-callout:hover .map-chip,
 .map-callout:focus-visible .map-chip {
   background: rgba(255, 255, 255, 0.12);
@@ -718,8 +735,7 @@ html.lenis body {
   justify-content: center;
   padding: 8px 6px;
 }
-.story-stage[data-docked] .map-chip > svg,
-.story-stage[data-docked] .map-chip > .cue-dot {
+.story-stage[data-docked] .map-chip > svg {
   display: none;
 }
 .story-stage[data-docked] .map-label {
@@ -787,6 +803,7 @@ html.lenis body {
 
 @media (prefers-reduced-motion: reduce) {
   .map-node.is-active::after,
+  .map .map-chip,
   .j-route,
   .map-detail-inner {
     animation: none;
