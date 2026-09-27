@@ -8,6 +8,10 @@ map:
     label: Caracas
   destination:
     label: Miami
+  # Shown in the empty space on the right until a bubble is opened.
+  intro:
+    heading: Before the next door opens...
+    text: Explore the places, pursuits, and ideas that brought me here.
   items:
     # Upper left
     venezuela:
@@ -21,11 +25,13 @@ map:
     creative:
       label: My Creative Side
       title: My Creative Side
-      # Each item can get an optional `body:` later (a line or two about it).
       list:
         - title: YouTube creator
+          body: I started filming and editing videos at 13. What began as an experiment became a lasting interest in storytelling through video.
         - title: Fashion videographer
+          body: That interest took me into fashion, where I filmed and edited paid projects around runway shows and events.
         - title: Runway model
+          body: "Spending time in that environment led to an unexpected opportunity: I ended up walking in three or four shows. It was a fun chance to experience the runway from the other side of the camera."
 
     # Upper left, below Venezuela → Miami
     entrepreneurship:
@@ -45,12 +51,19 @@ map:
           body: |
             I started a door-to-door pressure washing business with $300, knocking on doors to find my own customers and doing the cleaning myself. By the time I left it, I had earned about $10,000.
 
-    # Lower left — content to be decided.
+    # Lower left
     interests:
       label: Interests
-      title: "[Placeholder] Interests"
+      title: From Options to Investing
+      # Small technical details shown with the payoff sketch (decorative, not claims).
+      tags: [Δ Delta, Θ Theta, ν Vega, Probability]
+      visual: payoff
       body: |
-        [Placeholder] To be decided.
+        My interest in markets began in high school. Options drew me deeper: I wanted to understand the probabilities, the Greeks, and how a position changes as price, time, and volatility move.
+
+        That curiosity eventually led me beyond individual trades and into fundamental analysis. Today, I focus on constructing a long-term portfolio grounded in business research, while studying how derivatives can hedge risk or create asymmetric exposure.
+      # Later: smaller supporting items (e.g. books, podcasts) can go in a `list:` like
+      # My Creative Side's; they'll appear beneath the main story.
 
     # Lower right
     sports:

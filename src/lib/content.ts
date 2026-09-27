@@ -34,11 +34,14 @@ export type MapItem = {
   activities?: string[]; // Sports
   photos?: { src: string; alt: string }[]; // Sports carousel, in display order
   projects?: MapProject[]; // Entrepreneurship
+  tags?: string[]; // small technical details (Interests)
+  visual?: "payoff"; // decorative sketch shown with the story
 };
 
 export type MapContent = {
   hometown: { lat: number; lon: number; label: string };
   destination: { label: string };
+  intro?: { heading: string; text: string };
   items: Record<MapItemId, MapItem>;
 };
 
@@ -66,6 +69,8 @@ function parseMap(raw: any): MapContent | undefined {
           typeof l === "string" ? { title: l, html: "" } : { title: l.title ?? "", html: l.body ? md(l.body) : "" },
         );
       if (Array.isArray(it.activities)) item.activities = it.activities.map(String);
+      if (Array.isArray(it.tags)) item.tags = it.tags.map(String);
+      if (it.visual === "payoff") item.visual = "payoff";
       if (Array.isArray(it.photos))
         item.photos = it.photos.filter((ph: { src?: string }) => ph?.src).map((ph: { src: string; alt?: string }) => ({ src: ph.src, alt: ph.alt ?? "" }));
       if (Array.isArray(it.projects))
@@ -85,6 +90,7 @@ function parseMap(raw: any): MapContent | undefined {
   return {
     hometown: { lat: Number(raw.hometown?.lat ?? 7), lon: Number(raw.hometown?.lon ?? -66), label: raw.hometown?.label ?? "" },
     destination: { label: raw.destination?.label ?? "Miami" },
+    intro: raw.intro?.heading ? { heading: String(raw.intro.heading), text: String(raw.intro.text ?? "") } : undefined,
     items,
   };
 }

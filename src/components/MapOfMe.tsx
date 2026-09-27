@@ -87,6 +87,17 @@ export default function MapOfMe({ map }: { map: MapContent }) {
         })}
       </div>
 
+      {map.intro && (
+        <div
+          className={`map-intro ${open ? "is-hidden" : ""}`}
+          style={{ "--dx": pct(detail.x), "--dy": pct(detail.y), "--dw": pct(detail.w), "--dh": pct(detail.h) } as CSSProperties}
+          aria-hidden={!!open}
+        >
+          <p className="map-intro-heading">{map.intro.heading}</p>
+          <p className="map-intro-text">{map.intro.text}</p>
+        </div>
+      )}
+
       <section
         id="map-detail"
         className={`map-detail glass ${open ? `is-open map-detail--${open}` : ""}`}
@@ -152,16 +163,6 @@ function Detail({ id, map }: { id: MapItemId; map: MapContent }) {
           ))}
         </ul>
       )}
-      {item.list && item.list.length > 0 && (
-        <ul className="map-list">
-          {item.list.map((l) => (
-            <li key={l.title}>
-              <span className="map-list-title">{l.title}</span>
-              {l.html && <div className="map-list-body prose" dangerouslySetInnerHTML={{ __html: l.html }} />}
-            </li>
-          ))}
-        </ul>
-      )}
       {item.projects && item.projects.length > 0 && (
         <ol className="map-projects">
           {item.projects.map((p, i) => (
@@ -190,7 +191,19 @@ function Detail({ id, map }: { id: MapItemId; map: MapContent }) {
           ))}
         </ol>
       )}
+      {item.visual === "payoff" && <PayoffSketch tags={item.tags} />}
       {item.html && <div className="prose" dangerouslySetInnerHTML={{ __html: item.html }} />}
+      {/* List: the main content (Creative) or smaller supporting items beneath a story */}
+      {item.list && item.list.length > 0 && (
+        <ul className={`map-list ${item.html ? "map-list--supporting" : ""}`}>
+          {item.list.map((l) => (
+            <li key={l.title}>
+              <span className="map-list-title">{l.title}</span>
+              {l.html && <div className="map-list-body prose" dangerouslySetInnerHTML={{ __html: l.html }} />}
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }
@@ -218,6 +231,43 @@ function Journey({ map }: { map: MapContent }) {
         {map.destination.label}
       </text>
     </svg>
+  );
+}
+
+// Decorative options sketch for Interests: a call's payoff at expiry (the hockey stick),
+// its value before expiry (the curve time decay pulls toward the payoff), and a
+// probability distribution for the underlying price. Illustrative only, no real data.
+function PayoffSketch({ tags }: { tags?: string[] }) {
+  const W = 300, H = 120, K = 150, base = 80;
+  const bell = Array.from({ length: 61 }, (_, i) => {
+    const x = i * 5;
+    const y = H - 8 - 30 * Math.exp(-((x - K) ** 2) / (2 * 48 ** 2));
+    return `${i ? "L" : "M"}${x} ${y.toFixed(1)}`;
+  }).join(" ");
+  const before = Array.from({ length: 61 }, (_, i) => {
+    const x = i * 5;
+    const v = 24 * Math.log(1 + Math.exp((x - K) / 24)); // smooth version of max(0, x − K)
+    return `${i ? "L" : "M"}${x} ${(base + 8 - v * 0.55).toFixed(1)}`;
+  }).join(" ");
+  return (
+    <figure className="payoff" aria-hidden>
+      <svg viewBox={`0 0 ${W} ${H}`}>
+        <path className="payoff-bell" d={`${bell} L${W} ${H - 8} L0 ${H - 8} Z`} />
+        <line className="payoff-axis" x1="0" y1={base} x2={W} y2={base} />
+        <line className="payoff-strike" x1={K} y1="10" x2={K} y2={H - 8} />
+        <path className="payoff-before" d={before} />
+        <path className="payoff-expiry" d={`M0 ${base + 8} L${K} ${base + 8} L${W} ${base + 8 - (W - K) * 0.55}`} />
+        <text x={K + 5} y="18" className="payoff-label">strike</text>
+        <text x={W - 2} y={base - 6} textAnchor="end" className="payoff-label">price →</text>
+      </svg>
+      {tags && tags.length > 0 && (
+        <figcaption className="payoff-tags">
+          {tags.map((t) => (
+            <span key={t}>{t}</span>
+          ))}
+        </figcaption>
+      )}
+    </figure>
   );
 }
 
