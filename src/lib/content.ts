@@ -15,6 +15,22 @@ export type Site = {
   socials: LinkItem[];
 };
 
+export type MapItemId = "venezuela" | "soccer" | "running" | "family";
+
+export type MapItem = {
+  label: string;
+  title?: string;
+  html: string; // story / caption, markdown → html
+  image?: string; // e.g. /images/soccer.jpg — empty shows a placeholder
+  imageAlt?: string;
+};
+
+export type MapContent = {
+  hometown: { lat: number; lon: number; label: string };
+  destination: { label: string };
+  items: Record<MapItemId, MapItem>;
+};
+
 export type StoryContent = {
   id: string;
   eyebrow?: string;
@@ -22,7 +38,26 @@ export type StoryContent = {
   subtitle?: string;
   html: string;
   links: LinkItem[];
+  map?: MapContent;
 };
+
+const MAP_IDS: MapItemId[] = ["venezuela", "soccer", "running", "family"];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseMap(raw: any): MapContent | undefined {
+  if (!raw) return undefined;
+  const items = Object.fromEntries(
+    MAP_IDS.map((id) => {
+      const it = raw.items?.[id] ?? {};
+      return [id, { label: it.label ?? id, title: it.title, html: md(String(it.body ?? it.caption ?? "")), image: it.image || undefined, imageAlt: it.imageAlt }];
+    }),
+  ) as Record<MapItemId, MapItem>;
+  return {
+    hometown: { lat: Number(raw.hometown?.lat ?? 7), lon: Number(raw.hometown?.lon ?? -66), label: raw.hometown?.label ?? "" },
+    destination: { label: raw.destination?.label ?? "Miami" },
+    items,
+  };
+}
 
 export type MoreSection =
   | { id: string; type: "text"; eyebrow?: string; title: string; html: string }
@@ -63,7 +98,15 @@ export function getStoryContent(): Record<string, StoryContent> {
   return Object.fromEntries(
     readDir("story").map(({ id, data, content }) => [
       id,
-      { id, eyebrow: data.eyebrow, title: data.title ?? "", subtitle: data.subtitle, html: md(content), links: data.links ?? [] },
+      {
+        id,
+        eyebrow: data.eyebrow,
+        title: data.title ?? "",
+        subtitle: data.subtitle,
+        html: md(content),
+        links: data.links ?? [],
+        map: parseMap(data.map),
+      },
     ]),
   );
 }

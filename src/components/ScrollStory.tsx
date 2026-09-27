@@ -6,6 +6,7 @@ import { STORY, type Anchor } from "@/config/story";
 import type { FrameManifest, StoryContent } from "@/lib/content";
 import { buildTimeline, easeInOutSine, panelStateAt, planGlide, restAt, timeAt } from "@/lib/timeline";
 import GlassPanel from "./GlassPanel";
+import MapOfMe from "./MapOfMe";
 
 // Frames load coarse-to-fine: every 16th first so the whole video is scrubbable almost
 // immediately, then the gaps fill in — nearest to the reader's position first.
@@ -169,6 +170,18 @@ export default function ScrollStory({
       stops.forEach((stop, i) => {
         const slot = slotRefs.current[i];
         if (!slot) return;
+        if (stop.feature) {
+          // Feature layers cover the video frame itself (desktop) or the whole stage
+          // (phones), and expose how much of the frame is cropped off-screen.
+          const box = docked ? { x: 0, y: 0, w: innerWidth, h: innerHeight } : cover;
+          Object.assign(slot.style, { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
+          slot.style.setProperty("--crop-l", `${Math.max(0, -box.x)}px`);
+          slot.style.setProperty("--crop-r", `${Math.max(0, box.x + box.w - innerWidth)}px`);
+          slot.style.setProperty("--crop-t", `${Math.max(0, -box.y)}px`);
+          slot.style.setProperty("--crop-b", `${Math.max(0, box.y + box.h - innerHeight)}px`);
+          slot.toggleAttribute("data-placed", true);
+          return;
+        }
         const spot = portrait ? stop.mobile : docked ? undefined : stop.panel;
         slot.toggleAttribute("data-placed", !!spot);
         if (!spot) {
@@ -211,7 +224,8 @@ export default function ScrollStory({
         if (!el || !slot) return;
         const { opacity, shift } = panelStateAt(win, p);
         el.style.opacity = String(opacity);
-        el.style.transform = `translate3d(0, ${shift * 28}px, 0) scale(${0.985 + 0.015 * opacity})`;
+        if (stops[i].feature) el.style.setProperty("--reveal", opacity.toFixed(3)); // draws the map lines
+        else el.style.transform = `translate3d(0, ${shift * 28}px, 0) scale(${0.985 + 0.015 * opacity})`;
         slot.style.visibility = opacity > 0.001 ? "visible" : "hidden";
       });
 
@@ -262,6 +276,7 @@ export default function ScrollStory({
 
       if (reduceMotion || legs.length === 0) return setScroll(y1);
       busy = true;
+      dispatchEvent(new Event("story:glide")); // lets interactive stops close themselves
       glide = { legs, i: 0, legStart: performance.now() };
     };
 
@@ -331,6 +346,8 @@ export default function ScrollStory({
 
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.closest("input, textarea, [contenteditable]")) return;
+      // Space/Enter on a focused button activates it; it must not also advance the story.
+      if ((e.key === " " || e.key === "Enter") && e.target instanceof HTMLElement && e.target.closest("button, a")) return;
       const dir =
         ["ArrowDown", "PageDown", " "].includes(e.key) && !e.shiftKey ? 1
         : ["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey) ? -1
@@ -394,7 +411,7 @@ export default function ScrollStory({
                 ref={(el) => {
                   slotRefs.current[i] = el;
                 }}
-                className={`panel-slot ${stop.hero ? "panel-slot--hero" : ""}`}
+                className={`panel-slot ${stop.hero ? "panel-slot--hero" : ""} ${stop.feature ? "panel-slot--feature" : ""}`}
                 style={{ visibility: "hidden" }}
               >
                 <div
@@ -408,6 +425,8 @@ export default function ScrollStory({
                     <GlassPanel>
                       <p className="panel-missing">Missing content/story/{stop.id}.md</p>
                     </GlassPanel>
+                  ) : stop.feature === "map-of-me" && c.map ? (
+                    <MapOfMe map={c.map} />
                   ) : stop.hero ? (
                     <HeroContent c={c} />
                   ) : (

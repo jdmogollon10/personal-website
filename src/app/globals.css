@@ -313,6 +313,352 @@ html.lenis body {
   transition: transform 0.2s;
 }
 
+/* ---------- Map of me (interactive first stop) ---------- */
+/* The slot is sized to the video frame by ScrollStory; positions inside are % of the frame. */
+.panel-slot--feature {
+  max-width: none;
+  pointer-events: none;
+}
+.panel-slot--feature .panel-motion {
+  position: absolute;
+  inset: 0;
+}
+.map {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  --line: rgba(255, 255, 255, 0.5);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.map-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.map-lines line {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  /* --reveal (0→1) comes from the scroll position: the lines draw out as the scene settles */
+  stroke-dashoffset: calc(1 - var(--reveal, 1));
+  transition: opacity 0.45s var(--ease), stroke 0.45s var(--ease);
+}
+.map-lines line.is-dim {
+  opacity: 0.25;
+}
+.map-lines line.is-active {
+  stroke: rgba(255, 255, 255, 0.9);
+}
+/* Where each line leaves the character: a small glowing node. */
+.map-node {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px rgba(255, 236, 214, 0.9);
+  transform: translate(-50%, -50%);
+  opacity: var(--reveal, 1);
+  transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+}
+.map-node.is-active {
+  transform: translate(-50%, -50%) scale(1.5);
+}
+.map-node.is-dim {
+  opacity: calc(var(--reveal, 1) * 0.3);
+}
+.map-node.is-active::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  animation: map-pulse 2.6s ease-out infinite;
+}
+@keyframes map-pulse {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Callouts: the button's port sits exactly on the line's end point. */
+.map-callouts {
+  position: absolute;
+  inset: 0;
+}
+.map-callout {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--fg);
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: clamp(0, calc((var(--reveal, 1) - 0.45) * 2), 1);
+  transition: opacity 0.45s var(--ease), filter 0.45s var(--ease);
+}
+.map-callout--right { transform: translate(0, -50%); }
+.map-callout--left { transform: translate(-100%, -50%); flex-direction: row-reverse; }
+.map-callout--above { transform: translate(-50%, -100%); flex-direction: column-reverse; }
+.map-callout--below { transform: translate(-50%, 0); flex-direction: column; }
+.map-callout.is-dim {
+  opacity: 0.35;
+  filter: saturate(0.6);
+}
+.map-port {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+  flex: none;
+}
+.map-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 13px 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  white-space: nowrap;
+  transition: background 0.25s, border-color 0.25s;
+}
+.map-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.map-callout:hover .map-chip,
+.map-callout:focus-visible .map-chip {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.map-callout:focus-visible {
+  outline: none;
+}
+.map-callout.is-active .map-chip {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.map-callout.is-active .map-port {
+  background: #fff;
+}
+.cue-map {
+  width: 24px;
+  height: auto;
+  overflow: visible;
+}
+.cue-map path {
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+.cue-map circle {
+  fill: var(--accent);
+}
+.cue-frame {
+  width: 18px;
+  height: 13px;
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+.cue-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Expanded view: opens into the empty part of the frame, never over the character. */
+.map-detail {
+  position: absolute;
+  left: var(--dx);
+  top: var(--dy);
+  width: min(var(--dw), calc(100% - var(--dx) - var(--crop-r, 0px) - 24px));
+  max-height: var(--dh);
+  overflow: auto;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(18px) scale(0.98);
+  transform-origin: left center;
+  transition: opacity 0.45s var(--ease), transform 0.55s var(--ease);
+  scrollbar-width: thin;
+}
+.map-detail.is-open {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.map-detail-inner {
+  animation: map-in 0.5s var(--ease) both;
+}
+@keyframes map-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.map-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.map-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.map-detail .panel-title {
+  padding-right: 2.2rem;
+}
+.map-photo {
+  margin: 0.4rem 0 1rem;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.map-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.map-photo-empty {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  gap: 0.4rem;
+  text-align: center;
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  border-radius: 10px;
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 10px, transparent 10px 20px);
+}
+.map-photo-empty span {
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.map-photo-empty small {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.map-journey {
+  width: 100%;
+  max-height: 240px;
+  margin: 0.2rem 0 1rem;
+  overflow: visible;
+}
+.j-country {
+  fill: rgba(255, 255, 255, 0.05);
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+.j-route {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: j-draw 1.6s var(--ease) 0.2s forwards;
+}
+@keyframes j-draw {
+  to { stroke-dashoffset: 0; }
+}
+.j-dot {
+  fill: #fff;
+}
+.j-dot--dest {
+  fill: var(--accent);
+}
+.j-label {
+  fill: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Phones: no lines (the portrait video frames him differently); compact chips along the
+   bottom and one expanded card above them. */
+.story-stage[data-docked] .map-lines,
+.story-stage[data-docked] .map-node {
+  display: none;
+}
+.story-stage[data-docked] .map-callouts {
+  inset: auto 12px max(16px, env(safe-area-inset-bottom)) 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.story-stage[data-docked] .map-callout {
+  position: static;
+  transform: none;
+}
+.story-stage[data-docked] .map-port {
+  display: none;
+}
+.story-stage[data-docked] .map-chip {
+  padding: 6px 11px 6px 9px;
+}
+.story-stage[data-docked] .map-label {
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+}
+.story-stage[data-docked] .map-detail {
+  left: 12px;
+  right: 12px;
+  top: auto;
+  bottom: 100px;
+  width: auto;
+  max-height: 44%;
+  padding: 20px;
+  transform: translateY(14px);
+  --glass-bg: rgba(10, 8, 6, 0.66);
+  --glass-bg-top: rgba(24, 18, 12, 0.7);
+}
+.story-stage[data-docked] .map-detail .panel-title {
+  font-size: 1.5rem;
+  margin-bottom: 0.6rem;
+}
+.story-stage[data-docked] .map-journey {
+  max-height: 120px;
+}
+.story-stage[data-docked] .map-photo {
+  aspect-ratio: 16 / 9;
+}
+.story-stage[data-docked] .map-detail.is-open {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-node.is-active::after,
+  .j-route,
+  .map-detail-inner {
+    animation: none;
+  }
+  .j-route {
+    stroke-dashoffset: 0;
+  }
+}
+
 /* ---------- After the video (continues the black ending) ---------- */
 .more {
   position: relative;

@@ -17,6 +17,7 @@
 //    speed     (optional) speed multiplier for the transition INTO this stop, on top of
 //              pace.videoSpeed (1.1 = 10% faster, 0.9 = 10% slower).
 //    glass     (optional) "dark" for a smoky panel that stays readable over bright frames.
+//    feature   (optional) "map-of-me" turns this stop into the interactive map (see MAP_OF_ME).
 //    approach  (optional) screens of scroll to travel from the previous stop to this one.
 //              Defaults to (seconds travelled / secondsPerScreen).
 //    panel     where the panel sits, in VIDEO-FRAME coordinates (0–1), so it stays over
@@ -47,6 +48,7 @@ export type StoryStop = {
   speed?: number;
   glass?: "dark";
   hero?: boolean;
+  feature?: "map-of-me";
   panel: { x: number; y: number; anchor: Anchor; width: number };
   mobile?: { x?: number; y: number; anchor: Anchor; width?: number };
 };
@@ -77,7 +79,7 @@ export const STORY = {
     { id: "section-00", time: 0, hold: 0.8, hero: true,
       panel: { x: 0.5, y: 0.5, anchor: "center", width: 760 },
       mobile: { y: 0.5, anchor: "center" } },
-    { id: "section-06", time: 144 / 24, hold: 1.6, speed: 1.1, // 00:06.00 — him on the island, facing the door
+    { id: "section-06", time: 144 / 24, hold: 2.2, speed: 1.1, feature: "map-of-me", // 00:06.00 — him on the island, facing the door
       panel: { x: 0.80, y: 0.45, anchor: "center", width: 440 },
       mobile: { y: 1.1, anchor: "bottom" } },
     { id: "section-08", time: 207 / 24, hold: 1.6, glass: "dark", // 00:08.62 — hand in the light (sharpest 0.5–1s after 7.75)
@@ -109,3 +111,27 @@ export const STORY = {
       mobile: { y: 1.1, anchor: "bottom" } },
   ] satisfies StoryStop[] as StoryStop[],
 };
+
+// ============================================================================
+//  MAP OF ME — the interactive first stop (section-06).
+// ============================================================================
+//  All positions are fractions of the DESKTOP video frame (0–1), so lines stay attached
+//  to the character at any window size. Text and photos live in content/story/section-06.md.
+//
+//    callouts  each line runs `from` a point just outside the character's silhouette (so no
+//              line crosses him) `to` where its label sits; `side` is the label's direction
+//    detail    the empty area where an opened callout expands (never over the character)
+
+export type MapSide = "left" | "right" | "above" | "below";
+type Pt = { x: number; y: number };
+
+export const MAP_OF_ME = {
+  callouts: {
+    venezuela: { from: { x: 0.272, y: 0.205 }, to: { x: 0.2, y: 0.11 }, side: "left" },    // left shoulder
+    soccer: { from: { x: 0.318, y: 0.2 }, to: { x: 0.35, y: 0.075 }, side: "above" },       // right shoulder
+    running: { from: { x: 0.271, y: 0.335 }, to: { x: 0.17, y: 0.74 }, side: "left" },      // left hip
+    family: { from: { x: 0.323, y: 0.33 }, to: { x: 0.53, y: 0.84 }, side: "right" },       // right hip
+  } satisfies Record<string, { from: Pt; to: Pt; side: MapSide }>,
+  detail: { x: 0.655, y: 0.12, w: 0.3, h: 0.76 },
+};
+

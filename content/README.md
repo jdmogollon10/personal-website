@@ -25,6 +25,17 @@ links:                      # optional buttons
 Your text here. **Bold**, *italic*, [links](https://example.com) and lists all work.
 ```
 
+### `story/section-06.md` — the "map of me" (first stop)
+Instead of a panel, the first stop shows four callouts linked to the character:
+Venezuela → Miami, Soccer, Running, Family & curiosity. All their text lives under `map:`
+in this file.
+- **Hometown dot:** set `map.hometown.lat` / `lon` to your hometown's coordinates
+  (Google Maps: right-click the spot → the two numbers). `label` names it on the route map.
+- **Photos:** put images in `public/images/` (e.g. `soccer.jpg`) and set
+  `image: /images/soccer.jpg` for Soccer or Running. Empty `image` shows the placeholder.
+  Landscape photos (4:3) fit best; they're cropped to fill the frame.
+- **Line and callout positions** are in `MAP_OF_ME` in `src/config/story.ts`.
+
 ### `more/` — normal sections after the video
 Ordered by filename. `type: text`, `type: links` (cards with `label`, `href`, `tag`,
 `note`), or `type: contact` (shows the email + socials from `site.md`).
