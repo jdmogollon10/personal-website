@@ -1,7 +1,6 @@
 ---
-eyebrow: A story in motion
+eyebrow: A STORY IN MOTION
 title: Juan Diego Mogollon
-subtitle: Analyst · Builder · [Placeholder subtitle]
+subtitle: Finance student · Analyst · Builder
 ---
-[section-00 placeholder] A short description of this website: who you are and what the
-reader is about to walk through.
+From Venezuela to Miami, I’ve followed curiosity into markets, business, and building things of my own. Scroll to explore the experiences behind my work.

@@ -15,7 +15,16 @@ export type Site = {
   socials: LinkItem[];
 };
 
-export type MapItemId = "venezuela" | "creative" | "interests" | "sports";
+export type MapItemId = "venezuela" | "creative" | "entrepreneurship" | "interests" | "sports";
+
+export type MapProject = {
+  title: string;
+  subtitle?: string;
+  image?: string;
+  imageAlt?: string;
+  facts?: string[];
+  html: string;
+};
 
 export type MapItem = {
   label: string;
@@ -24,6 +33,7 @@ export type MapItem = {
   list?: { title: string; html: string }[]; // e.g. My Creative Side
   activities?: string[]; // Sports
   photos?: { src: string; alt: string }[]; // Sports carousel, in display order
+  projects?: MapProject[]; // Entrepreneurship
 };
 
 export type MapContent = {
@@ -42,7 +52,7 @@ export type StoryContent = {
   map?: MapContent;
 };
 
-const MAP_IDS: MapItemId[] = ["venezuela", "creative", "interests", "sports"];
+const MAP_IDS: MapItemId[] = ["venezuela", "creative", "entrepreneurship", "interests", "sports"];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseMap(raw: any): MapContent | undefined {
@@ -58,6 +68,17 @@ function parseMap(raw: any): MapContent | undefined {
       if (Array.isArray(it.activities)) item.activities = it.activities.map(String);
       if (Array.isArray(it.photos))
         item.photos = it.photos.filter((ph: { src?: string }) => ph?.src).map((ph: { src: string; alt?: string }) => ({ src: ph.src, alt: ph.alt ?? "" }));
+      if (Array.isArray(it.projects))
+        item.projects = it.projects.map(
+          (p: { title?: string; subtitle?: string; image?: string; imageAlt?: string; facts?: unknown[]; body?: string }) => ({
+            title: p.title ?? "",
+            subtitle: p.subtitle,
+            image: p.image || undefined,
+            imageAlt: p.imageAlt ?? "",
+            facts: Array.isArray(p.facts) ? p.facts.map(String) : undefined,
+            html: md(String(p.body ?? "")),
+          }),
+        );
       return [id, item];
     }),
   ) as Record<MapItemId, MapItem>;

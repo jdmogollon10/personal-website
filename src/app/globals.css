@@ -511,6 +511,7 @@ html.lenis body {
   transform-origin: left center;
   transition: opacity 0.45s var(--ease), transform 0.55s var(--ease);
   scrollbar-width: thin;
+  overscroll-behavior: contain; /* scrolling inside the card never scrolls the page */
 }
 .map-detail.is-open {
   opacity: 1;
@@ -655,6 +656,68 @@ html.lenis body {
   color: rgba(255, 255, 255, 0.35);
 }
 
+/* Entrepreneurship: numbered projects, divided so each is easy to scan */
+.map-projects {
+  margin-top: 0.3rem;
+}
+.map-project {
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--faint);
+}
+.map-project:last-child {
+  padding-bottom: 0.2rem;
+}
+.map-project--image {
+  display: grid;
+  grid-template-columns: 128px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+.map-project-img {
+  width: 100%;
+  height: auto; /* whole screenshot, natural proportions */
+  display: block;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), 0 0 24px rgba(255, 236, 214, 0.06);
+}
+.map-project-num {
+  font-size: 0.66rem;
+  letter-spacing: 0.26em;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+.map-project-title {
+  font-family: var(--font-serif), serif;
+  font-weight: 400;
+  font-size: 1.4rem;
+  line-height: 1.1;
+  margin-bottom: 0.6rem;
+  text-wrap: balance;
+}
+.map-project-sub {
+  color: var(--muted);
+}
+.map-project-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0.7rem;
+}
+.map-project-facts li {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  color: var(--fg);
+}
+.map-project .prose {
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
 /* My Creative Side: a clean list; each row can grow a `body` later */
 .map-list {
   margin: 0.4rem 0 0.2rem;
@@ -727,13 +790,26 @@ html.lenis body {
   position: static;
   transform: none;
 }
+.story-stage[data-docked] .map-callout:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
 .story-stage[data-docked] .map-port {
   display: none;
 }
 .story-stage[data-docked] .map-chip {
   width: 100%;
   justify-content: center;
-  padding: 8px 6px;
+  padding: 7px 6px;
+}
+.story-stage[data-docked] .map-callouts {
+  gap: 7px;
+}
+.story-stage[data-docked] .map-project--image {
+  grid-template-columns: 92px 1fr;
+  gap: 14px;
+}
+.story-stage[data-docked] .map-project-title {
+  font-size: 1.2rem;
 }
 .story-stage[data-docked] .map-chip > svg {
   display: none;
@@ -746,9 +822,9 @@ html.lenis body {
   left: 12px;
   right: 12px;
   top: auto;
-  bottom: 100px;
+  bottom: 140px; /* above the three rows of bubbles */
   width: auto;
-  max-height: 44%;
+  max-height: 40%;
   padding: 20px;
   transform: translateY(14px);
   --glass-bg: rgba(10, 8, 6, 0.66);

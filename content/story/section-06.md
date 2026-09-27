@@ -26,11 +26,24 @@ map:
         - title: YouTube creator
         - title: Fashion videographer
         - title: Runway model
+
+    # Upper left, below Venezuela → Miami
+    entrepreneurship:
+      label: Entrepreneurship
+      title: Ideas I Put Into Motion
+      # Each project: title, optional subtitle, optional image (shown whole, never cropped),
+      # optional facts (short figures shown as a row), and body text.
+      projects:
         - title: App creator
+          subtitle: Venezuela Earthquake 2026
+          image: /images/entrepreneurship/01.webp
+          imageAlt: "Home screen of the Encuéntrame app: Venezuela Earthquake 2026, “Connecting families in moments of uncertainty,” with Search for a Person and Report a Survivor buttons"
           body: |
-            Venezuela Earthquake 2026 humanitarian app I built to help families in Venezuela
-            find missing loved ones. People can post missing-person and survivor profiles,
-            share information, and report possible matches to help bring families back together.
+            I built a humanitarian app to help families in Venezuela find missing loved ones. People can post missing-person and survivor profiles, share information, and report possible matches to help bring families back together.
+        - title: Pressure washing business
+          facts: ["Started with $300", "Earned about $10,000"]
+          body: |
+            I started a door-to-door pressure washing business with $300, knocking on doors to find my own customers and doing the cleaning myself. By the time I left it, I had earned about $10,000.
 
     # Lower left — content to be decided.
     interests:

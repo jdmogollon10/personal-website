@@ -129,6 +129,7 @@ export const MAP_OF_ME = {
   callouts: {
     venezuela: { from: { x: 0.272, y: 0.205 }, to: { x: 0.235, y: 0.105 }, side: "left" }, // left shoulder
     creative: { from: { x: 0.318, y: 0.2 }, to: { x: 0.35, y: 0.075 }, side: "above" },     // right shoulder
+    entrepreneurship: { from: { x: 0.272, y: 0.27 }, to: { x: 0.215, y: 0.235 }, side: "left" }, // left arm
     interests: { from: { x: 0.271, y: 0.335 }, to: { x: 0.17, y: 0.74 }, side: "left" },    // left hip
     sports: { from: { x: 0.323, y: 0.33 }, to: { x: 0.53, y: 0.84 }, side: "right" },       // right hip
   } satisfies Record<string, { from: Pt; to: Pt; side: MapSide }>,

@@ -10,7 +10,7 @@ import Carousel from "./Carousel";
 // Everything is positioned in % of the video frame (this layer is sized to the frame
 // by ScrollStory), so the lines stay attached to the character.
 
-const ORDER: MapItemId[] = ["venezuela", "creative", "interests", "sports"];
+const ORDER: MapItemId[] = ["venezuela", "creative", "entrepreneurship", "interests", "sports"];
 const JOURNEY_BOUNDS: Bounds = { west: -82, east: -58.5, south: 0.4, north: 27.5 }; // Venezuela → Miami
 const JOURNEY_W = 320;
 const pct = (v: number) => `${(v * 100).toFixed(3)}%`;
@@ -100,6 +100,7 @@ export default function MapOfMe({ map }: { map: MapContent }) {
         }
         aria-hidden={!open}
         aria-live="polite"
+        data-no-story-swipe
       >
         {open && (
           <div key={open} className="map-detail-inner">
@@ -160,6 +161,34 @@ function Detail({ id, map }: { id: MapItemId; map: MapContent }) {
             </li>
           ))}
         </ul>
+      )}
+      {item.projects && item.projects.length > 0 && (
+        <ol className="map-projects">
+          {item.projects.map((p, i) => (
+            <li key={p.title} className={`map-project ${p.image ? "map-project--image" : ""}`}>
+              {p.image && (
+                // Shown whole (never cropped or stretched) in a phone-like frame.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="map-project-img" src={p.image} alt={p.imageAlt ?? ""} />
+              )}
+              <div className="map-project-text">
+                <p className="map-project-num">{String(i + 1).padStart(2, "0")}</p>
+                <h3 className="map-project-title">
+                  {p.title}
+                  {p.subtitle && <span className="map-project-sub"> — {p.subtitle}</span>}
+                </h3>
+                {p.facts && p.facts.length > 0 && (
+                  <ul className="map-project-facts">
+                    {p.facts.map((f) => (
+                      <li key={f}>{f}</li>
+                    ))}
+                  </ul>
+                )}
+                <div className="prose" dangerouslySetInnerHTML={{ __html: p.html }} />
+              </div>
+            </li>
+          ))}
+        </ol>
       )}
       {item.html && <div className="prose" dangerouslySetInnerHTML={{ __html: item.html }} />}
     </>

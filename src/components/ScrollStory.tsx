@@ -318,6 +318,12 @@ export default function ScrollStory({
       if (now - lastWheel > 200) gestureUsed = false;
       lastWheel = now;
       const dir = e.deltaY > 0 ? 1 : -1;
+      // Let a scrollable card (e.g. an open map card) scroll itself while it still can.
+      const inner = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-no-story-swipe]") : null;
+      if (inner && (dir === 1 ? inner.scrollTop + inner.clientHeight < inner.scrollHeight - 1 : inner.scrollTop > 0)) {
+        e.stopPropagation(); // keep Lenis out of it too; the browser scrolls the card
+        return;
+      }
       const y = scrollY, end = exitY();
       const inStory = y < end - 2 || (y <= end + 2 && dir === -1);
       if (!inStory) return;
