@@ -31,7 +31,7 @@ map:
         - title: Fashion videographer
           body: That interest took me into fashion, where I filmed and edited paid projects around runway shows and events.
         - title: Runway model
-          body: "Spending time in that environment led to an unexpected opportunity: I ended up walking in three or four shows. It was a fun chance to experience the runway from the other side of the camera."
+          body: "Spending time in that environment led to an unexpected opportunity: I ended up walking in about three or four shows. It was a fun chance to experience the runway from the other side of the camera."
 
     # Upper left, below Venezuela → Miami
     entrepreneurship:
@@ -42,18 +42,26 @@ map:
       projects:
         - title: App creator
           subtitle: Venezuela Earthquake 2026
-          image: /images/entrepreneurship/01.webp
+          tab: Venezuela app
+          image: /images/apps/venezuela-earthquake-app.webp
           imageAlt: "Home screen of the Encuéntrame app: Venezuela Earthquake 2026, “Connecting families in moments of uncertainty,” with Search for a Person and Report a Survivor buttons"
           body: |
             I built a humanitarian app to help families in Venezuela find missing loved ones. People can post missing-person and survivor profiles, share information, and report possible matches to help bring families back together.
+        - title: INTAKE
+          subtitle: A finance hub that grew beyond me
+          tab: INTAKE
+          image: /images/apps/intake.webp
+          imageAlt: "INTAKE home screen: a grid of the latest market, deal, and research headlines from many sources, with sections for Daily Brief, M&A Deals, News, Macro & Credit, and more"
+          body: |
+            I built INTAKE because keeping up with markets, deals, and research meant checking too many places each morning. What started as a dashboard for myself is now something I share with friends who follow the same topics.
         - title: Pressure washing business
+          tab: Pressure washing
           facts: ["Started with $300", "Earned about $10,000"]
           body: |
             I started a door-to-door pressure washing business with $300, knocking on doors to find my own customers and doing the cleaning myself. By the time I left it, I had earned about $10,000.
 
-    # Lower left
-    interests:
-      label: Interests
+    investing:
+      label: Early Investing
       title: From Options to Investing
       # Small technical details shown with the payoff sketch (decorative, not claims).
       tags: [Δ Delta, Θ Theta, ν Vega, Probability]
@@ -62,8 +70,24 @@ map:
         My interest in markets began in high school. Options drew me deeper: I wanted to understand the probabilities, the Greeks, and how a position changes as price, time, and volatility move.
 
         That curiosity eventually led me beyond individual trades and into fundamental analysis. Today, I focus on constructing a long-term portfolio grounded in business research, while studying how derivatives can hedge risk or create asymmetric exposure.
-      # Later: smaller supporting items (e.g. books, podcasts) can go in a `list:` like
-      # My Creative Side's; they'll appear beneath the main story.
+
+    interests:
+      label: Interests
+      title: Off the Clock
+      # Shown as small tiles. icon: tennis | podcast | screen | music
+      list:
+        - title: Learning tennis
+          icon: tennis
+          body: I’m learning tennis now and enjoying the process of being a beginner again.
+        - title: Podcasts
+          icon: podcast
+          body: I’m usually listening to Acquired, Invest Like the Best, Odd Lots, or another conversation about markets and how businesses work.
+        - title: On screen
+          icon: screen
+          body: I’m drawn to shows like Billions, Industry, and Suits.
+        - title: House music & DJing
+          icon: music
+          body: I love house music and DJ for fun.
 
     # Lower right
     sports:

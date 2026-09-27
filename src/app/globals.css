@@ -697,42 +697,101 @@ html.lenis body {
   color: rgba(255, 255, 255, 0.35);
 }
 
-/* Entrepreneurship: numbered projects, divided so each is easy to scan */
+/* Entrepreneurship: one project at a time behind small numbered tabs */
 .map-projects {
-  margin-top: 0.3rem;
+  margin-top: 0.2rem;
+}
+.map-project-tabs {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--faint);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.map-project-tabs button {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.map-project-tabs button:hover {
+  color: var(--fg);
+}
+.map-project-tabs button.is-current {
+  color: var(--fg);
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.07);
+}
+.map-project-num {
+  font-size: 0.64rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
 }
 .map-project {
-  padding: 1.1rem 0;
-  border-top: 1px solid var(--faint);
-}
-.map-project:last-child {
-  padding-bottom: 0.2rem;
+  animation: map-in 0.45s var(--ease) both;
 }
 .map-project--image {
   display: grid;
-  grid-template-columns: 128px 1fr;
+  grid-template-columns: 124px 1fr;
   gap: 18px;
   align-items: start;
+}
+.map-project--wide .map-project-shot {
+  margin-bottom: 1rem;
+}
+.map-project-shot {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
 }
 .map-project-img {
   width: 100%;
   height: auto; /* whole screenshot, natural proportions */
   display: block;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), 0 0 24px rgba(255, 236, 214, 0.06);
 }
-.map-project-num {
-  font-size: 0.66rem;
-  letter-spacing: 0.26em;
-  color: var(--accent);
-  margin-bottom: 0.35rem;
+.map-project--wide .map-project-img {
+  border-radius: 8px;
+}
+.map-project-zoom {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.map-project-shot:hover .map-project-zoom,
+.map-project-shot:focus-visible .map-project-zoom {
+  opacity: 1;
 }
 .map-project-title {
   font-family: var(--font-serif), serif;
   font-weight: 400;
   font-size: 1.4rem;
-  line-height: 1.1;
+  line-height: 1.12;
   margin-bottom: 0.6rem;
   text-wrap: balance;
 }
@@ -757,6 +816,68 @@ html.lenis body {
 .map-project .prose {
   font-size: 0.92rem;
   line-height: 1.6;
+}
+
+/* Enlarged screenshot over the scene (click or Esc to close) */
+.map-zoom {
+  position: absolute;
+  top: var(--crop-t, 0px);
+  bottom: var(--crop-b, 0px);
+  left: var(--crop-l, 0px);
+  right: var(--crop-r, 0px);
+  display: grid;
+  place-items: center;
+  padding: 5vh 5vw;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: auto;
+  cursor: zoom-out;
+  z-index: 5;
+  animation: map-in 0.35s var(--ease) both;
+}
+.map-zoom img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+.map-zoom-close {
+  top: 20px;
+  right: 20px;
+}
+
+/* Interests: compact tiles with a little personality */
+.map-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 0.3rem;
+}
+.map-tiles li {
+  padding: 14px 14px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--faint);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+}
+.tile-icon {
+  width: 20px;
+  height: 20px;
+  margin-bottom: 0.55rem;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.map-tiles .map-list-title {
+  font-size: 0.95rem;
+}
+.map-tiles .map-list-body {
+  font-size: 0.84rem;
+  line-height: 1.5;
 }
 
 /* Interests: an illustrative options payoff sketch + tiny Greek tags */
@@ -911,6 +1032,10 @@ html.lenis body {
 .story-stage[data-docked] .map-project--image {
   grid-template-columns: 92px 1fr;
   gap: 14px;
+}
+.story-stage[data-docked] .map-tiles {
+  grid-template-columns: 1fr;
+  gap: 8px;
 }
 .story-stage[data-docked] .map-project-title {
   font-size: 1.2rem;

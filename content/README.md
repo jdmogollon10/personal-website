@@ -26,16 +26,17 @@ Your text here. **Bold**, *italic*, [links](https://example.com) and lists all w
 ```
 
 ### `story/section-06.md` — the "map of me" (first stop)
-Instead of a panel, the first stop shows four callouts linked to the character:
-Venezuela → Miami, My Creative Side, Interests, Sports. All their text lives under `map:`.
-- **Hometown dot:** set `map.hometown.lat` / `lon` to your hometown's coordinates
-  (Google Maps: right-click the spot → the two numbers). `label` names it on the route map.
-- **My Creative Side:** each `list` item can get an optional `body:` line later.
-- **Sports photos:** the carousel shows `sports.photos` in order — add, delete or move
-  lines to change it. New photos: put them in `public/images/sports/`, or drop originals
-  in a folder and run `npm run photos -- "source-media/PHOTOS SPORTS" sports`
-  (resizes and strips location data). Any proportions work; nothing is stretched.
-- **Line and callout positions** are in `MAP_OF_ME` in `src/config/story.ts`.
+The first stop shows six bubbles linked to the character: Venezuela → Miami, My Creative
+Side, Entrepreneurship, Early Investing, Interests, Sports. All their text lives under `map:`.
+While a bubble is open, the story is held in place; closing it lets scrolling continue.
+- **Intro text** (right side, shown until a bubble opens): `map.intro`.
+- **Hometown dot:** `map.hometown.lat` / `lon` (currently Caracas).
+- **Entrepreneurship:** `projects` show as numbered tabs, in list order. Each can have a
+  short `tab` name, `image` (any shape; wide ones sit above the text, tall ones beside it;
+  click to enlarge), `facts`, and `body`.
+- **Interests:** `list` items with an `icon` (tennis, podcast, screen, music) show as tiles.
+- **Sports photos:** the `photos` list, in order. New photos: `npm run photos -- "<folder>" sports`.
+- **Positions** of bubbles and lines: `MAP_OF_ME` in `src/config/story.ts`.
 
 ### `more/` — normal sections after the video
 Ordered by filename. `type: text`, `type: links` (cards with `label`, `href`, `tag`,

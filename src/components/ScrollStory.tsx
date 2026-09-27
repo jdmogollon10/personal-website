@@ -294,8 +294,33 @@ export default function ScrollStory({
       busy = false;
     };
 
+    // ---- story lock ----------------------------------------------------------
+    // While an interactive panel is open (e.g. a map bubble), the story must not move:
+    // wheel, swipe, keys and the scrollbar are all held until the panel closes. Scrolling
+    // inside the open panel itself still works.
+    let locked = false;
+    const lock = () => {
+      locked = true;
+      lenis?.stop();
+      document.documentElement.style.overflow = "hidden";
+    };
+    const unlock = () => {
+      locked = false;
+      document.documentElement.style.overflow = "";
+      lenis?.start();
+    };
+    addEventListener("story:lock", lock);
+    addEventListener("story:unlock", unlock);
+    // An element that can scroll on its own in this direction (an open panel's content).
+    const scroller = (target: EventTarget | null, dir: 1 | -1) => {
+      const el = target instanceof Element ? target.closest<HTMLElement>("[data-no-story-swipe]") : null;
+      if (!el) return null;
+      return (dir === 1 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0) ? el : null;
+    };
+
     /** Returns true if the gesture was handled as a scene step. */
     const step = (dir: 1 | -1) => {
+      if (locked) return true; // swallowed: the story is held while a panel is open
       const y = scrollY;
       const end = exitY();
       // Below the story: only an upward gesture right at its edge re-enters it.
@@ -319,9 +344,13 @@ export default function ScrollStory({
       lastWheel = now;
       const dir = e.deltaY > 0 ? 1 : -1;
       // Let a scrollable card (e.g. an open map card) scroll itself while it still can.
-      const inner = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-no-story-swipe]") : null;
-      if (inner && (dir === 1 ? inner.scrollTop + inner.clientHeight < inner.scrollHeight - 1 : inner.scrollTop > 0)) {
+      if (scroller(e.target, dir)) {
         e.stopPropagation(); // keep Lenis out of it too; the browser scrolls the card
+        return;
+      }
+      if (locked) {
+        e.preventDefault();
+        e.stopPropagation();
         return;
       }
       const y = scrollY, end = exitY();
@@ -335,18 +364,28 @@ export default function ScrollStory({
 
     let touchY: number | null = null;
     const onTouchStart = (e: TouchEvent) => {
+      lastTouchY = e.touches[0].clientY;
       // Swipes that start on a carousel (or anything marked data-no-story-swipe) are its own.
       const t = e.target instanceof Element ? e.target : null;
       touchY = t?.closest("[data-no-story-swipe]") ? null : e.touches[0].clientY;
     };
+    let lastTouchY = 0;
     const onTouchMove = (e: TouchEvent) => {
+      if (locked) {
+        // Only the open panel may scroll; everything else is held still.
+        const y = e.touches[0].clientY;
+        const dir = lastTouchY - y > 0 ? 1 : -1;
+        lastTouchY = y;
+        if (!scroller(e.target, dir)) e.preventDefault();
+        return;
+      }
       if (touchY === null) return;
       const dir = touchY - e.touches[0].clientY > 0 ? 1 : -1;
       const y = scrollY, end = exitY();
       if (y < end - 2 || (y <= end + 2 && dir === -1)) e.preventDefault();
     };
     const onTouchEnd = (e: TouchEvent) => {
-      if (touchY === null) return;
+      if (touchY === null || locked) return;
       const dy = touchY - e.changedTouches[0].clientY;
       touchY = null;
       if (Math.abs(dy) > 30) step(dy > 0 ? 1 : -1);
@@ -360,7 +399,13 @@ export default function ScrollStory({
         ["ArrowDown", "PageDown", " "].includes(e.key) && !e.shiftKey ? 1
         : ["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey) ? -1
         : 0;
-      if (dir && step(dir)) e.preventDefault();
+      if (!dir) return;
+      // Locked: keys may scroll a focused panel, but never the story.
+      if (locked) {
+        if (!(e.target instanceof Element && e.target.closest("[data-no-story-swipe]"))) e.preventDefault();
+        return;
+      }
+      if (step(dir)) e.preventDefault();
     };
 
     addEventListener("wheel", onWheel, { passive: false, capture: true });
@@ -390,6 +435,9 @@ export default function ScrollStory({
       removeEventListener("touchmove", onTouchMove);
       removeEventListener("touchend", onTouchEnd);
       removeEventListener("keydown", onKey);
+      removeEventListener("story:lock", lock);
+      removeEventListener("story:unlock", unlock);
+      document.documentElement.style.overflow = "";
       lenis?.destroy();
     };
   }, [manifest, timeline, stops]);

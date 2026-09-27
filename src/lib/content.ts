@@ -15,10 +15,11 @@ export type Site = {
   socials: LinkItem[];
 };
 
-export type MapItemId = "venezuela" | "creative" | "entrepreneurship" | "interests" | "sports";
+export type MapItemId = "venezuela" | "creative" | "entrepreneurship" | "investing" | "interests" | "sports";
 
 export type MapProject = {
   title: string;
+  tab?: string; // short name on the project's tab
   subtitle?: string;
   image?: string;
   imageAlt?: string;
@@ -30,7 +31,7 @@ export type MapItem = {
   label: string;
   title?: string;
   html: string; // story / caption, markdown → html
-  list?: { title: string; html: string }[]; // e.g. My Creative Side
+  list?: { title: string; html: string; icon?: string }[]; // Creative entries, Interests tiles
   activities?: string[]; // Sports
   photos?: { src: string; alt: string }[]; // Sports carousel, in display order
   projects?: MapProject[]; // Entrepreneurship
@@ -55,7 +56,7 @@ export type StoryContent = {
   map?: MapContent;
 };
 
-const MAP_IDS: MapItemId[] = ["venezuela", "creative", "entrepreneurship", "interests", "sports"];
+const MAP_IDS: MapItemId[] = ["venezuela", "creative", "entrepreneurship", "investing", "interests", "sports"];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseMap(raw: any): MapContent | undefined {
@@ -65,8 +66,8 @@ function parseMap(raw: any): MapContent | undefined {
       const it = raw.items?.[id] ?? {};
       const item: MapItem = { label: it.label ?? id, title: it.title, html: md(String(it.body ?? it.caption ?? "")) };
       if (Array.isArray(it.list))
-        item.list = it.list.map((l: { title?: string; body?: string } | string) =>
-          typeof l === "string" ? { title: l, html: "" } : { title: l.title ?? "", html: l.body ? md(l.body) : "" },
+        item.list = it.list.map((l: { title?: string; body?: string; icon?: string } | string) =>
+          typeof l === "string" ? { title: l, html: "" } : { title: l.title ?? "", html: l.body ? md(l.body) : "", icon: l.icon },
         );
       if (Array.isArray(it.activities)) item.activities = it.activities.map(String);
       if (Array.isArray(it.tags)) item.tags = it.tags.map(String);
@@ -75,8 +76,9 @@ function parseMap(raw: any): MapContent | undefined {
         item.photos = it.photos.filter((ph: { src?: string }) => ph?.src).map((ph: { src: string; alt?: string }) => ({ src: ph.src, alt: ph.alt ?? "" }));
       if (Array.isArray(it.projects))
         item.projects = it.projects.map(
-          (p: { title?: string; subtitle?: string; image?: string; imageAlt?: string; facts?: unknown[]; body?: string }) => ({
+          (p: { title?: string; tab?: string; subtitle?: string; image?: string; imageAlt?: string; facts?: unknown[]; body?: string }) => ({
             title: p.title ?? "",
+            tab: p.tab,
             subtitle: p.subtitle,
             image: p.image || undefined,
             imageAlt: p.imageAlt ?? "",

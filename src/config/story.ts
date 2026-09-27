@@ -128,11 +128,15 @@ type Pt = { x: number; y: number };
 
 export const MAP_OF_ME = {
   callouts: {
-    venezuela: { from: { x: 0.272, y: 0.2 }, to: { x: 0.225, y: 0.06 }, side: "left" },          // left shoulder
-    creative: { from: { x: 0.318, y: 0.2 }, to: { x: 0.355, y: 0.125 }, side: "above" },         // right shoulder
-    entrepreneurship: { from: { x: 0.272, y: 0.27 }, to: { x: 0.2, y: 0.205 }, side: "left" },   // left arm
-    interests: { from: { x: 0.271, y: 0.335 }, to: { x: 0.16, y: 0.7 }, side: "left" },          // left hip
-    sports: { from: { x: 0.323, y: 0.33 }, to: { x: 0.52, y: 0.86 }, side: "right" },            // right hip
+    // Top: the sky left of him, and the gap between his head and the door
+    venezuela: { from: { x: 0.272, y: 0.2 }, to: { x: 0.21, y: 0.065 }, side: "left" },         // left shoulder
+    creative: { from: { x: 0.318, y: 0.2 }, to: { x: 0.343, y: 0.105 }, side: "above" },        // right shoulder
+    // Lower left: the dark wedge beside the island's underside
+    investing: { from: { x: 0.271, y: 0.335 }, to: { x: 0.215, y: 0.72 }, side: "left" },       // left hip
+    interests: { from: { x: 0.281, y: 0.425 }, to: { x: 0.29, y: 0.905 }, side: "left" },       // left foot
+    // Lower right: below the island's right side
+    sports: { from: { x: 0.323, y: 0.33 }, to: { x: 0.55, y: 0.79 }, side: "right" },           // right hip
+    entrepreneurship: { from: { x: 0.313, y: 0.42 }, to: { x: 0.47, y: 0.925 }, side: "right" }, // right foot
   } satisfies Record<string, { from: Pt; to: Pt; side: MapSide }>,
   detail: { x: 0.655, y: 0.12, w: 0.3, h: 0.76 },
 };
