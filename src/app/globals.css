@@ -528,37 +528,136 @@ html.lenis body {
 .map-detail .panel-title {
   padding-right: 2.2rem;
 }
-.map-photo {
-  margin: 0.4rem 0 1rem;
+/* Sports: photo carousel (photos are the focus) + a quiet line of activities */
+.carousel {
+  margin: 0.2rem 0 0.9rem;
+}
+.carousel-stage {
+  position: relative;
   aspect-ratio: 4 / 3;
   border-radius: 10px;
   overflow: hidden;
+  background: #000;
+  touch-action: none; /* horizontal swipes go to the carousel */
+  user-select: none;
+  -webkit-user-select: none;
 }
-.map-photo img {
+.carousel-slide {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  transition: opacity 0.8s var(--ease, ease);
+}
+.carousel-slide.is-current {
+  opacity: 1;
+}
+.carousel-fill {
+  position: absolute;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  object-fit: cover;
+  filter: blur(26px) brightness(0.42);
+}
+.carousel-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  display: block;
+  object-fit: contain; /* natural proportions, never stretched */
 }
-.map-photo-empty {
-  height: 100%;
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin-top: -18px;
   display: grid;
-  place-content: center;
-  gap: 0.4rem;
-  text-align: center;
-  border: 1px dashed rgba(255, 255, 255, 0.28);
-  border-radius: 10px;
-  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 10px, transparent 10px 20px);
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--fg);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
 }
-.map-photo-empty span {
-  font-size: 0.72rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+.carousel-btn span {
+  margin-top: -3px;
 }
-.map-photo-empty small {
-  font-size: 0.72rem;
+.carousel-btn--prev { left: 10px; }
+.carousel-btn--next { right: 10px; }
+.carousel-btn:hover,
+.carousel-btn:focus-visible {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: rgba(255, 255, 255, 0.5);
+  outline: none;
+}
+.carousel-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.carousel-dots button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: width 0.3s var(--ease, ease), background 0.3s;
+}
+.carousel-dots button.is-current {
+  width: 18px;
+  background: rgba(255, 255, 255, 0.85);
+}
+.carousel-count {
+  margin-left: auto;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
   color: var(--muted);
 }
+.map-activities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.map-activities li + li::before {
+  content: "·";
+  margin: 0 0.7em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* My Creative Side: a clean list; each row can grow a `body` later */
+.map-list {
+  margin: 0.4rem 0 0.2rem;
+}
+.map-list li {
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--faint);
+}
+.map-list li:last-child {
+  border-bottom: 1px solid var(--faint);
+}
+.map-list-title {
+  font-size: 1.02rem;
+  color: var(--fg);
+}
+.map-list-body {
+  margin-top: 0.35rem;
+  font-size: 0.92rem;
+}
+
 .map-journey {
   width: 100%;
   max-height: 240px;
@@ -603,9 +702,8 @@ html.lenis body {
 }
 .story-stage[data-docked] .map-callouts {
   inset: auto 12px max(16px, env(safe-area-inset-bottom)) 12px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 .story-stage[data-docked] .map-callout {
@@ -616,11 +714,17 @@ html.lenis body {
   display: none;
 }
 .story-stage[data-docked] .map-chip {
-  padding: 6px 11px 6px 9px;
+  width: 100%;
+  justify-content: center;
+  padding: 8px 6px;
+}
+.story-stage[data-docked] .map-chip > svg,
+.story-stage[data-docked] .map-chip > .cue-dot {
+  display: none;
 }
 .story-stage[data-docked] .map-label {
-  font-size: 0.64rem;
-  letter-spacing: 0.16em;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
 }
 .story-stage[data-docked] .map-detail {
   left: 12px;
@@ -641,8 +745,41 @@ html.lenis body {
 .story-stage[data-docked] .map-journey {
   max-height: 120px;
 }
-.story-stage[data-docked] .map-photo {
-  aspect-ratio: 16 / 9;
+.story-stage[data-docked] .carousel-stage {
+  aspect-ratio: 16 / 10;
+}
+/* On phones, Sports skips the big title so the photos get the room. */
+.story-stage[data-docked] .map-detail--sports .panel-title {
+  font-size: 0.7rem;
+  font-family: inherit;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--accent);
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.story-stage[data-docked] .map-detail .panel-eyebrow {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  padding-right: 40px;
+  margin-bottom: 1rem;
+}
+.story-stage[data-docked] .map-close {
+  top: 16px;
+  right: 16px;
+}
+.story-stage[data-docked] .map-detail--sports .carousel {
+  margin-top: 14px;
+}
+.story-stage[data-docked] .map-activities {
+  letter-spacing: 0.12em;
+  font-size: 0.62rem;
+}
+.story-stage[data-docked] .map-activities li + li::before {
+  margin: 0 0.5em;
 }
 .story-stage[data-docked] .map-detail.is-open {
   transform: none;

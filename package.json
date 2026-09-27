@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "frames": "node scripts/extract-frames.mjs"
+    "frames": "node scripts/extract-frames.mjs",
+    "photos": "node scripts/optimize-photos.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",

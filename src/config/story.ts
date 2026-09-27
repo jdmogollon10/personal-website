@@ -128,9 +128,9 @@ type Pt = { x: number; y: number };
 export const MAP_OF_ME = {
   callouts: {
     venezuela: { from: { x: 0.272, y: 0.205 }, to: { x: 0.2, y: 0.11 }, side: "left" },    // left shoulder
-    soccer: { from: { x: 0.318, y: 0.2 }, to: { x: 0.35, y: 0.075 }, side: "above" },       // right shoulder
-    running: { from: { x: 0.271, y: 0.335 }, to: { x: 0.17, y: 0.74 }, side: "left" },      // left hip
-    family: { from: { x: 0.323, y: 0.33 }, to: { x: 0.53, y: 0.84 }, side: "right" },       // right hip
+    creative: { from: { x: 0.318, y: 0.2 }, to: { x: 0.35, y: 0.075 }, side: "above" },     // right shoulder
+    interests: { from: { x: 0.271, y: 0.335 }, to: { x: 0.17, y: 0.74 }, side: "left" },    // left hip
+    sports: { from: { x: 0.323, y: 0.33 }, to: { x: 0.53, y: 0.84 }, side: "right" },       // right hip
   } satisfies Record<string, { from: Pt; to: Pt; side: MapSide }>,
   detail: { x: 0.655, y: 0.12, w: 0.3, h: 0.76 },
 };

@@ -329,7 +329,9 @@ export default function ScrollStory({
 
     let touchY: number | null = null;
     const onTouchStart = (e: TouchEvent) => {
-      touchY = e.touches[0].clientY;
+      // Swipes that start on a carousel (or anything marked data-no-story-swipe) are its own.
+      const t = e.target instanceof Element ? e.target : null;
+      touchY = t?.closest("[data-no-story-swipe]") ? null : e.touches[0].clientY;
     };
     const onTouchMove = (e: TouchEvent) => {
       if (touchY === null) return;

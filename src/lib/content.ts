@@ -15,14 +15,15 @@ export type Site = {
   socials: LinkItem[];
 };
 
-export type MapItemId = "venezuela" | "soccer" | "running" | "family";
+export type MapItemId = "venezuela" | "creative" | "interests" | "sports";
 
 export type MapItem = {
   label: string;
   title?: string;
   html: string; // story / caption, markdown → html
-  image?: string; // e.g. /images/soccer.jpg — empty shows a placeholder
-  imageAlt?: string;
+  list?: { title: string; html: string }[]; // e.g. My Creative Side
+  activities?: string[]; // Sports
+  photos?: { src: string; alt: string }[]; // Sports carousel, in display order
 };
 
 export type MapContent = {
@@ -41,7 +42,7 @@ export type StoryContent = {
   map?: MapContent;
 };
 
-const MAP_IDS: MapItemId[] = ["venezuela", "soccer", "running", "family"];
+const MAP_IDS: MapItemId[] = ["venezuela", "creative", "interests", "sports"];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseMap(raw: any): MapContent | undefined {
@@ -49,7 +50,15 @@ function parseMap(raw: any): MapContent | undefined {
   const items = Object.fromEntries(
     MAP_IDS.map((id) => {
       const it = raw.items?.[id] ?? {};
-      return [id, { label: it.label ?? id, title: it.title, html: md(String(it.body ?? it.caption ?? "")), image: it.image || undefined, imageAlt: it.imageAlt }];
+      const item: MapItem = { label: it.label ?? id, title: it.title, html: md(String(it.body ?? it.caption ?? "")) };
+      if (Array.isArray(it.list))
+        item.list = it.list.map((l: { title?: string; body?: string } | string) =>
+          typeof l === "string" ? { title: l, html: "" } : { title: l.title ?? "", html: l.body ? md(l.body) : "" },
+        );
+      if (Array.isArray(it.activities)) item.activities = it.activities.map(String);
+      if (Array.isArray(it.photos))
+        item.photos = it.photos.filter((ph: { src?: string }) => ph?.src).map((ph: { src: string; alt?: string }) => ({ src: ph.src, alt: ph.alt ?? "" }));
+      return [id, item];
     }),
   ) as Record<MapItemId, MapItem>;
   return {

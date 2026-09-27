@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { MAP_OF_ME } from "@/config/story";
 import type { MapContent, MapItemId } from "@/lib/content";
 import { MIAMI, VENEZUELA_BOUNDS, outlinePath, projector, type Bounds } from "@/lib/venezuela";
+import Carousel from "./Carousel";
 
 // Interactive "map of me" shown while the video is paused at the first stop.
 // Everything is positioned in % of the video frame (this layer is sized to the frame
 // by ScrollStory), so the lines stay attached to the character.
 
-const ORDER: MapItemId[] = ["venezuela", "soccer", "running", "family"];
+const ORDER: MapItemId[] = ["venezuela", "creative", "interests", "sports"];
 const JOURNEY_BOUNDS: Bounds = { west: -82, east: -58.5, south: 0.4, north: 27.5 }; // Venezuela → Miami
 const JOURNEY_W = 320;
 const pct = (v: number) => `${(v * 100).toFixed(3)}%`;
@@ -83,7 +84,7 @@ export default function MapOfMe({ map }: { map: MapContent }) {
 
       <section
         id="map-detail"
-        className={`map-detail glass ${open ? "is-open" : ""}`}
+        className={`map-detail glass ${open ? `is-open map-detail--${open}` : ""}`}
         style={
           {
             "--dx": pct(detail.x),
@@ -110,13 +111,20 @@ export default function MapOfMe({ map }: { map: MapContent }) {
 
 function Cue({ id, map }: { id: MapItemId; map: MapContent }) {
   if (id === "venezuela") return <VenezuelaMini hometown={map.hometown} />;
-  if (id === "family") return <span className="cue-dot" aria-hidden />;
-  return (
-    <svg className="cue-frame" viewBox="0 0 22 16" aria-hidden>
-      <rect x="0.5" y="0.5" width="21" height="15" rx="2" />
-      <path d="M3 12l5-5 4 4 3-3 4 4" />
-    </svg>
-  );
+  if (id === "sports")
+    return (
+      <svg className="cue-frame" viewBox="0 0 22 16" aria-hidden>
+        <rect x="0.5" y="0.5" width="21" height="15" rx="2" />
+        <path d="M3 12l5-5 4 4 3-3 4 4" />
+      </svg>
+    );
+  if (id === "creative")
+    return (
+      <svg className="cue-frame" viewBox="0 0 16 16" aria-hidden>
+        <path d="M8 1.5l1.7 4.8 4.8 1.7-4.8 1.7L8 14.5l-1.7-4.8L1.5 8l4.8-1.7z" />
+      </svg>
+    );
+  return <span className="cue-dot" aria-hidden />;
 }
 
 function VenezuelaMini({ hometown }: { hometown: MapContent["hometown"] }) {
@@ -134,23 +142,29 @@ function Detail({ id, map }: { id: MapItemId; map: MapContent }) {
   const item = map.items[id];
   return (
     <>
-      <p className="panel-eyebrow">{item.label}</p>
+      {/* Label as eyebrow only when it adds something beyond the title */}
+      {item.label !== item.title && <p className="panel-eyebrow">{item.label}</p>}
       {item.title && <h2 className="panel-title">{item.title}</h2>}
       {id === "venezuela" && <Journey map={map} />}
-      {(id === "soccer" || id === "running") && (
-        <figure className="map-photo">
-          {item.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.image} alt={item.imageAlt ?? ""} />
-          ) : (
-            <div className="map-photo-empty">
-              <span>{id === "soccer" ? "Soccer photo" : "Running photo"}</span>
-              <small>Set `image` in content/story/section-06.md</small>
-            </div>
-          )}
-        </figure>
+      {id === "sports" && item.photos && <Carousel photos={item.photos} label={`${item.label} photos`} />}
+      {id === "sports" && item.activities && item.activities.length > 0 && (
+        <ul className="map-activities" aria-label="Activities">
+          {item.activities.map((a) => (
+            <li key={a}>{a}</li>
+          ))}
+        </ul>
       )}
-      <div className="prose" dangerouslySetInnerHTML={{ __html: item.html }} />
+      {item.list && item.list.length > 0 && (
+        <ul className="map-list">
+          {item.list.map((l) => (
+            <li key={l.title}>
+              <span className="map-list-title">{l.title}</span>
+              {l.html && <div className="map-list-body prose" dangerouslySetInnerHTML={{ __html: l.html }} />}
+            </li>
+          ))}
+        </ul>
+      )}
+      {item.html && <div className="prose" dangerouslySetInnerHTML={{ __html: item.html }} />}
     </>
   );
 }
