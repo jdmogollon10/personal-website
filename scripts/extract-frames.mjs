@@ -21,7 +21,7 @@ const QUALITY = 72;
 
 const SETS = {
   desktop: { source: "source-media/Final video V3.mp4", width: 1920, height: 1080 },
-  mobile: { source: "source-media/mobile version.mp4", width: 900, height: 1600 },
+  mobile: { source: "source-media/MOBILE V2.mp4", width: 900, height: 1600 },
 };
 
 const root = path.resolve(import.meta.dirname, "..");
