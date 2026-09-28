@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Lenis from "lenis";
 import { STORY, type Anchor } from "@/config/story";
 import type { FrameManifest, StoryContent } from "@/lib/content";
-import { buildTimeline, easeInOutSine, panelStateAt, planGlide, restAt, timeAt } from "@/lib/timeline";
+import { buildTimeline, easeInOutSine, panelStateAt, planGlide, restAt, stepAt, stepRests, timeAt } from "@/lib/timeline";
 import GlassPanel from "./GlassPanel";
 import MapOfMe from "./MapOfMe";
+import StoryPhotos from "./StoryPhotos";
+import ProjectShowcase from "./ProjectShowcase";
+import TopicPicker from "./TopicPicker";
 
 // Frames load coarse-to-fine: every 16th first so the whole video is scrubbable almost
 // immediately, then the gaps fill in — nearest to the reader's position first.
@@ -34,13 +37,21 @@ export default function ScrollStory({
 }) {
   const stops = useMemo(() => [...STORY.stops].sort((a, b) => a.time - b.time), []);
   const timeline = useMemo(() => buildTimeline(stops), [stops]);
+  // Stops whose content has `steps` (or several `projects` or `topics`) show them one scroll at a time
+  // during their hold, while the video stays still.
+  const stepCounts = useMemo(
+    () => stops.map((s) => content[s.id]?.steps.length || content[s.id]?.projects.length || content[s.id]?.topics.length || 0),
+    [stops, content],
+  );
 
   const trackRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const labelRefs = useRef<(HTMLDivElement | null)[]>([]);
   const barRef = useRef<HTMLDivElement>(null);
+  const cueRef = useRef<HTMLDivElement>(null);
 
   const [loaded, setLoaded] = useState(0);
   const [ready, setReady] = useState(false);
@@ -184,18 +195,81 @@ export default function ScrollStory({
         }
         const spot = portrait ? stop.mobile : docked ? undefined : stop.panel;
         slot.toggleAttribute("data-placed", !!spot);
+        // mobile.fill: the slot covers the whole screen (inside the margin) and the panel
+        // lays itself out in it (e.g. a title at the top, its steps at the bottom).
+        const fill = portrait && !!stop.mobile?.fill;
+        slot.toggleAttribute("data-fill", fill);
+        if (fill) {
+          Object.assign(slot.style, {
+            left: `${margin}px`,
+            top: `${margin}px`,
+            width: `${innerWidth - margin * 2}px`,
+            height: `${innerHeight - margin * 2}px`,
+          });
+          return;
+        }
+        slot.style.height = "";
         if (!spot) {
           slot.style.left = slot.style.top = slot.style.width = "";
           return;
         }
         const maxW = innerWidth - margin * 2;
-        slot.style.width = `${Math.min(spot.width ?? maxW, maxW)}px`;
+        // toX: measured from where the panel's left edge actually lands (after the margin),
+        // so its right edge ends at the same spot in the frame. Never narrower than 320px.
+        const toX = spot === stop.panel ? stop.panel.toX : undefined;
+        const reach =
+          toX !== undefined ? Math.max(320, cover.x + toX * cover.w - Math.max(cover.x + spot.x! * cover.w, margin)) : undefined;
+        slot.style.width = `${Math.min(reach ?? spot.width ?? maxW, maxW)}px`;
         const [ax, ay] = ANCHORS[spot.anchor];
         const w = slot.offsetWidth, h = slot.offsetHeight;
-        const px = cover.x + (spot.x ?? 0.5) * cover.w - ax * w;
+        let px = cover.x + (spot.x ?? 0.5) * cover.w - ax * w;
+        // alignTo: the panel's text starts exactly where that label group starts, as long as
+        // the panel still fits on screen there (narrow windows keep the normal placement).
+        const align = spot === stop.panel ? stop.labels?.[stop.panel.alignTo ?? ""] : undefined;
+        const alignedX = align ? cover.x + align.x * cover.w - textInset(slot) : NaN;
+        const aligned = alignedX >= margin && alignedX + w <= innerWidth - margin;
+        if (aligned) px = alignedX;
+        slot.toggleAttribute("data-aligned", aligned);
         const py = cover.y + spot.y * cover.h - ay * h;
         slot.style.left = `${Math.min(Math.max(px, margin), innerWidth - w - margin)}px`;
         slot.style.top = `${Math.min(Math.max(py, margin), innerHeight - h - margin)}px`;
+      });
+      // Labels are placed after their panel, since on phones they stack above it.
+      stops.forEach((stop, i) => {
+        const layer = labelRefs.current[i], slot = slotRefs.current[i];
+        if (layer && slot) placeLabels(stop, layer, slot, docked, margin);
+      });
+    };
+
+    // Distance from a panel's left edge to where its text starts (border + padding).
+    const textInset = (slot: HTMLElement) => {
+      const glass = slot.querySelector<HTMLElement>(".glass");
+      return glass ? glass.clientLeft + parseFloat(getComputedStyle(glass).paddingLeft) : 0;
+    };
+
+    // Scene labels: each group sits at its spot in the frame; on phones / narrow windows
+    // they stack together just above the text box.
+    const placeLabels = (stop: (typeof stops)[number], layer: HTMLDivElement, slot: HTMLDivElement, docked: boolean, margin: number) => {
+      layer.toggleAttribute("data-docked", docked);
+      const groups = layer.querySelectorAll<HTMLElement>("[data-group]");
+      if (docked) {
+        // Phones: one centered stack at the top of the screen, under the scroll cue, well
+        // clear of the text box at the bottom.
+        layer.style.top = `${margin + 40}px`;
+        groups.forEach((g) => (g.style.left = g.style.top = ""));
+        return;
+      }
+      layer.style.top = "";
+      groups.forEach((g) => {
+        const spot = stop.labels?.[g.dataset.group!];
+        if (!spot) return;
+        const [ax, ay] = ANCHORS[spot.anchor];
+        const w = g.offsetWidth, h = g.offsetHeight;
+        // A group the panel aligns to follows the panel (which may have been nudged to fit).
+        const px = stop.panel.alignTo === g.dataset.group && slot.hasAttribute("data-aligned") ? slot.offsetLeft + textInset(slot) : cover.x + spot.x * cover.w - ax * w;
+        const py = cover.y + spot.y * cover.h - ay * h;
+        g.style.left = `${Math.min(Math.max(px, margin), innerWidth - w - margin)}px`;
+        g.style.top = `${Math.min(Math.max(py, margin), innerHeight - h - margin)}px`;
       });
     };
 
@@ -218,16 +292,42 @@ export default function ScrollStory({
       const p = progress();
       render();
 
+      let resting = false; // a (non-hero) stop is fully showing
       timeline.windows.forEach((win, i) => {
         const el = panelRefs.current[i];
         const slot = slotRefs.current[i];
         if (!el || !slot) return;
         const { opacity, shift } = panelStateAt(win, p);
-        el.style.opacity = String(opacity);
+        el.style.setProperty("--panel-o", String(opacity));
         if (stops[i].feature) el.style.setProperty("--reveal", opacity.toFixed(3)); // draws the map lines
         else el.style.transform = `translate3d(0, ${shift * 28}px, 0) scale(${0.985 + 0.015 * opacity})`;
         slot.style.visibility = opacity > 0.001 ? "visible" : "hidden";
+        slot.toggleAttribute("data-active", opacity > 0.6); // lets panel content know it's on screen
+
+        // Step layout: mark which step is showing; CSS fades them in and out.
+        const n = stepCounts[i];
+        if (n > 1) {
+          const k = stepAt(win, n, p);
+          if (slot.dataset.step !== String(k)) {
+            slot.dataset.step = String(k);
+            slot.querySelectorAll<HTMLElement>(".steps-item").forEach((it, j) => {
+              it.dataset.state = j < k ? "past" : j === k ? "current" : "future";
+            });
+          }
+        }
+
+        // Scene labels follow the panel, then reveal one by one (CSS) once it has arrived.
+        const layer = labelRefs.current[i];
+        if (layer) {
+          layer.style.opacity = String(opacity);
+          layer.style.visibility = slot.style.visibility;
+          layer.toggleAttribute("data-shown", opacity > 0.6);
+        }
+        if (!stops[i].hero && opacity > 0.95) resting = true;
       });
+
+      // "Scroll" cue at the top: only while a stop is settled and the story can move on.
+      cueRef.current?.toggleAttribute("data-show", resting && !busy && !locked);
 
       // Top progress line: fills across the cinematic part, then fades as the
       // page leaves the pinned stage.
@@ -248,7 +348,13 @@ export default function ScrollStory({
     const yAt = (p: number) => track.offsetTop + (p / timeline.total) * scrollable();
     const exitY = () => track.offsetTop + track.offsetHeight; // first section after the video
     const storyEndY = () => track.offsetTop + scrollable(); // last pinned position (black)
-    const snaps = () => [...new Set([track.offsetTop, ...timeline.windows.map((w) => yAt(restAt(w))), exitY()])];
+    const snaps = () => [
+      ...new Set([
+        track.offsetTop,
+        ...timeline.windows.flatMap((w, i) => (stepCounts[i] > 1 ? stepRests(w, stepCounts[i]) : [restAt(w)])).map(yAt),
+        exitY(),
+      ]),
+    ];
 
     // A glide is a list of timed legs (px), played back in the rAF loop so the video
     // runs at STORY.pace.videoSpeed and panels fade at their own pace.
@@ -310,12 +416,47 @@ export default function ScrollStory({
       lenis?.start();
     };
     addEventListener("story:lock", lock);
+    // A control inside a panel (e.g. project tabs) asks to show step k of its stop: glide
+    // there within the hold, so scrolling and clicking always agree.
+    const onStepRequest = (e: Event) => {
+      const { id, k } = (e as CustomEvent<{ id: string; k: number }>).detail;
+      const i = stops.findIndex((st) => st.id === id);
+      if (i < 0 || stepCounts[i] < 2 || locked || busy) return;
+      glideTo(yAt(stepRests(timeline.windows[i], stepCounts[i])[k]));
+    };
+    addEventListener("story:step", onStepRequest);
+    // From outside the story (e.g. the Selected Work cards): jump straight to a stop's step,
+    // without playing the video in between, and put keyboard focus on its controls.
+    const onGoto = (e: Event) => {
+      const { id, k } = (e as CustomEvent<{ id: string; k: number }>).detail;
+      const i = stops.findIndex((st) => st.id === id);
+      if (i < 0) return;
+      if (locked) unlock();
+      glide = null;
+      busy = false;
+      const n = stepCounts[i];
+      setScroll(yAt(n > 1 ? stepRests(timeline.windows[i], n)[Math.min(k, n - 1)] : restAt(timeline.windows[i])));
+      // Once the panel is showing (the update loop reveals it on the next frames).
+      setTimeout(() => {
+        const slot = slotRefs.current[i];
+        const target = slot?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]') ?? slot?.querySelector<HTMLElement>("button, a");
+        target?.focus({ preventScroll: true });
+      }, 150);
+    };
+    addEventListener("story:goto", onGoto);
     addEventListener("story:unlock", unlock);
     // An element that can scroll on its own in this direction (an open panel's content).
+    // The nearest marked element (an open card, or a panel taller than the screen) that can
+    // still scroll in this direction; the story only moves once it has reached its end.
+    const SCROLLABLE = "[data-no-story-swipe], [data-story-scroll]";
     const scroller = (target: EventTarget | null, dir: 1 | -1) => {
-      const el = target instanceof Element ? target.closest<HTMLElement>("[data-no-story-swipe]") : null;
-      if (!el) return null;
-      return (dir === 1 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0) ? el : null;
+      let el = target instanceof Element ? target.closest<HTMLElement>(SCROLLABLE) : null;
+      while (el) {
+        if (el.scrollHeight > el.clientHeight + 1 && (dir === 1 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0))
+          return el;
+        el = el.parentElement?.closest<HTMLElement>(SCROLLABLE) ?? null;
+      }
+      return null;
     };
 
     /** Returns true if the gesture was handled as a scene step. */
@@ -363,11 +504,18 @@ export default function ScrollStory({
     };
 
     let touchY: number | null = null;
+    let touchX = 0;
+    let onCarousel = false;
+    let innerScrolled = false; // this swipe scrolled a panel, so it doesn't also step the story
     const onTouchStart = (e: TouchEvent) => {
       lastTouchY = e.touches[0].clientY;
-      // Swipes that start on a carousel (or anything marked data-no-story-swipe) are its own.
+      touchX = e.touches[0].clientX;
+      innerScrolled = false;
+      // Swipes that start on a scrollable card (anything marked data-no-story-swipe) are its
+      // own. On a carousel, sideways swipes are the carousel's; vertical ones still step.
       const t = e.target instanceof Element ? e.target : null;
-      touchY = t?.closest("[data-no-story-swipe]") ? null : e.touches[0].clientY;
+      onCarousel = !!t?.closest(".carousel");
+      touchY = t?.closest("[data-no-story-swipe]") && !onCarousel ? null : e.touches[0].clientY;
     };
     let lastTouchY = 0;
     const onTouchMove = (e: TouchEvent) => {
@@ -380,14 +528,25 @@ export default function ScrollStory({
         return;
       }
       if (touchY === null) return;
-      const dir = touchY - e.touches[0].clientY > 0 ? 1 : -1;
+      // A panel taller than the screen scrolls itself first (native scrolling).
+      const cy = e.touches[0].clientY;
+      const moveDir = lastTouchY - cy > 0 ? 1 : -1;
+      lastTouchY = cy;
+      if (innerScrolled || scroller(e.target, moveDir)) {
+        innerScrolled = true;
+        return;
+      }
+      const dir = touchY - cy > 0 ? 1 : -1;
       const y = scrollY, end = exitY();
       if (y < end - 2 || (y <= end + 2 && dir === -1)) e.preventDefault();
     };
     const onTouchEnd = (e: TouchEvent) => {
       if (touchY === null || locked) return;
       const dy = touchY - e.changedTouches[0].clientY;
+      const dx = touchX - e.changedTouches[0].clientX;
       touchY = null;
+      if (innerScrolled) return;
+      if (onCarousel && Math.abs(dx) >= Math.abs(dy)) return;
       if (Math.abs(dy) > 30) step(dy > 0 ? 1 : -1);
     };
 
@@ -436,11 +595,13 @@ export default function ScrollStory({
       removeEventListener("touchend", onTouchEnd);
       removeEventListener("keydown", onKey);
       removeEventListener("story:lock", lock);
+      removeEventListener("story:step", onStepRequest);
+      removeEventListener("story:goto", onGoto);
       removeEventListener("story:unlock", unlock);
       document.documentElement.style.overflow = "";
       lenis?.destroy();
     };
-  }, [manifest, timeline, stops]);
+  }, [manifest, timeline, stops, stepCounts]);
 
   return (
     <>
@@ -457,6 +618,10 @@ export default function ScrollStory({
         <div ref={stageRef} className="story-stage">
           <canvas ref={canvasRef} className="story-canvas" aria-hidden />
           <div className="story-vignette" aria-hidden />
+          <div ref={cueRef} className="story-cue" aria-hidden>
+            Scroll
+            <span />
+          </div>
 
           {stops.map((stop, i) => {
             const c = content[stop.id];
@@ -475,7 +640,7 @@ export default function ScrollStory({
                     panelRefs.current[i] = el;
                   }}
                   className="panel-motion"
-                  style={{ opacity: 0 }}
+                  style={{ "--panel-o": 0 } as CSSProperties}
                 >
                   {!c ? (
                     <GlassPanel>
@@ -485,12 +650,42 @@ export default function ScrollStory({
                     <MapOfMe map={c.map} />
                   ) : stop.hero ? (
                     <HeroContent c={c} />
+                  ) : c.steps.length > 0 ? (
+                    <StepsContent c={c} />
                   ) : (
-                    <GlassPanel className={stop.glass === "dark" ? "glass--dark" : ""}>
+                    <GlassPanel className={stop.glass ? `glass--${stop.glass}` : ""}>
                       <PanelContent c={c} />
                     </GlassPanel>
                   )}
                 </div>
+              </div>
+            );
+          })}
+
+          {stops.map((stop, i) => {
+            const labels = content[stop.id]?.labels ?? [];
+            if (!labels.length) return null;
+            const groups = [...new Set(labels.map((l) => l.at))];
+            return (
+              <div
+                key={`${stop.id}-labels`}
+                ref={(el) => {
+                  labelRefs.current[i] = el;
+                }}
+                className="scene-labels"
+                style={{ visibility: "hidden", opacity: 0 }}
+              >
+                {groups.map((g) => (
+                  <div key={g} className="scene-labels-group" data-group={g}>
+                    {labels.map((l, n) =>
+                      l.at === g ? (
+                        <p key={l.text} className={`scene-label ${l.style ? `scene-label--${l.style}` : ""}`} style={{ "--i": n } as CSSProperties}>
+                          {l.text}
+                        </p>
+                      ) : null,
+                    )}
+                  </div>
+                ))}
               </div>
             );
           })}
@@ -521,6 +716,33 @@ function HeroContent({ c }: { c: StoryContent }) {
   );
 }
 
+// Open layout (no card): an italic serif title, an opening line, then steps revealed one
+// scroll at a time. Earlier steps stay, dimmed, so the progression reads top to bottom.
+function StepsContent({ c }: { c: StoryContent }) {
+  return (
+    <div className="steps">
+      <div className="steps-head">
+        <h2 className="steps-title">{c.title}</h2>
+        {c.lead && <p className="steps-lead">{c.lead}</p>}
+      </div>
+      <ol className="steps-list">
+        {c.steps.map((st, i) => (
+          <li key={st.title} className="steps-item" data-state={i === 0 ? "current" : "future"}>
+            <h3 className="steps-name">
+              <span className="steps-num" aria-hidden>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              {st.title}
+            </h3>
+            <div className="steps-body" dangerouslySetInnerHTML={{ __html: st.html }} />
+            {st.org && <p className="steps-org">{st.org}</p>}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function PanelContent({ c }: { c: StoryContent }) {
   return (
     <>
@@ -528,6 +750,34 @@ function PanelContent({ c }: { c: StoryContent }) {
       {c.title && <h2 className="panel-title">{c.title}</h2>}
       {c.subtitle && <p className="panel-subtitle">{c.subtitle}</p>}
       <div className="prose" dangerouslySetInnerHTML={{ __html: c.html }} />
+      {c.previews.length > 0 && (
+        <div className="previews">
+          {c.previews.map((pv, i) => (
+            <div key={pv.label} className="preview" style={{ "--i": i } as CSSProperties}>
+              <p className="preview-label">{pv.label}</p>
+              <p className="preview-items">
+                {pv.items.map((it, j) => (
+                  // The spaces around the dot let a narrow panel wrap between items.
+                  <Fragment key={it}>
+                    {j > 0 && (
+                      <>
+                        {" "}
+                        <span className="preview-sep" aria-hidden>
+                          ·
+                        </span>{" "}
+                      </>
+                    )}
+                    <span className="preview-item">{it}</span>
+                  </Fragment>
+                ))}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      {c.projects.length > 0 && <ProjectShowcase projects={c.projects} />}
+      {c.topics.length > 0 && <TopicPicker topics={c.topics} />}
+      {c.photos.length > 0 && <StoryPhotos photos={c.photos} title={c.photosTitle ?? `${c.title} photos`} caption={c.photosButton} />}
       {c.links.length > 0 && (
         <div className="panel-links">
           {c.links.map((l) => (

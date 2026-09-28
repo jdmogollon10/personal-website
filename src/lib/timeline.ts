@@ -7,7 +7,7 @@
 import { STORY, type StoryStop } from "@/config/story";
 
 type Segment =
-  | { kind: "play"; start: number; end: number; t0: number; t1: number; speed: number }
+  | { kind: "play"; start: number; end: number; t0: number; t1: number; speed: number; boost?: StoryStop["boost"] }
   | { kind: "hold"; start: number; end: number; t0: number };
 
 export type Timeline = {
@@ -22,16 +22,16 @@ export function buildTimeline(stops: StoryStop[] = STORY.stops): Timeline {
   let pos = 0;
   let t = 0;
 
-  const play = (to: number, length?: number, speed = 1) => {
+  const play = (to: number, length?: number, speed = 1, boost?: StoryStop["boost"]) => {
     if (to <= t) return;
     const len = length ?? (to - t) / STORY.secondsPerScreen;
-    segments.push({ kind: "play", start: pos, end: pos + len, t0: t, t1: to, speed });
+    segments.push({ kind: "play", start: pos, end: pos + len, t0: t, t1: to, speed, boost });
     pos += len;
     t = to;
   };
 
   for (const s of [...stops].sort((a, b) => a.time - b.time)) {
-    play(s.time, s.approach, s.speed);
+    play(s.time, s.approach, s.speed, s.boost);
     // A stop at the very start is already faded in when the page loads.
     const start = pos === 0 ? -STORY.fade : pos;
     windows.push({ start, end: pos + s.hold });
@@ -59,6 +59,21 @@ export function timeAt(tl: Timeline, p: number): number {
 /** Where a stop "rests": the middle of its hold (or the top of the page for a 0:00 hero). */
 export function restAt(win: { start: number; end: number }) {
   return win.start < 0 ? 0 : (win.start + win.end) / 2;
+}
+
+/**
+ * A stop with n steps: where each step rests inside the hold (after the fade-in, before
+ * the fade-out), and which step is showing at scroll position p.
+ */
+export function stepRests(win: { start: number; end: number }, n: number) {
+  const f = Math.min(STORY.fade, (win.end - win.start) / 3);
+  const inner = win.end - win.start - 2 * f;
+  return Array.from({ length: n }, (_, k) => win.start + f + (inner * (k + 0.5)) / n);
+}
+export function stepAt(win: { start: number; end: number }, n: number, p: number) {
+  const f = Math.min(STORY.fade, (win.end - win.start) / 3);
+  const inner = win.end - win.start - 2 * f;
+  return Math.min(n - 1, Math.max(0, Math.floor(((p - win.start - f) / inner) * n)));
 }
 
 /**
@@ -103,7 +118,6 @@ export function planGlide(tl: Timeline, p0: number, p1: number): Leg[] {
     .map((s) => ({ kind: s.kind, a: Math.max(s.start, lo), b: Math.min(s.end, hi), speed: s.kind === "play" ? s.speed : 1 }));
   if (p1 < p0) pieces.reverse().forEach((pc) => ([pc.a, pc.b] = [pc.b, pc.a]));
 
-  // Merge neighbours of the same kind.
   // Merge neighbours of the same kind (play pieces keep their summed duration).
   const merged: { kind: Segment["kind"]; a: number; b: number; seconds: number }[] = [];
   for (const pc of pieces) {
@@ -118,6 +132,8 @@ export function planGlide(tl: Timeline, p0: number, p1: number): Leg[] {
   const dir = Math.sign(p1 - p0);
   return merged.flatMap(({ kind, a, b, seconds }, i): Leg[] => {
     if (kind === "play") {
+      const boosted = tl.segments.some((sg) => sg.kind === "play" && sg.boost && sg.end > Math.min(a, b) && sg.start < Math.max(a, b));
+      if (boosted) return [boostedLeg(tl, a, b)];
       const duration = seconds;
       return [{ from: a, to: b, duration, ease: trapezoid(Math.min(0.45, ramp / Math.max(duration, 1e-3))) }];
     }
@@ -140,6 +156,52 @@ export function planGlide(tl: Timeline, p0: number, p1: number): Leg[] {
       { from: edge, to: b, duration: 0, ease: easeInOutSine },
     ];
   });
+}
+
+/** Speed multiplier at scroll position p inside a play segment (its speed × any boost). */
+function speedAt(tl: Timeline, p: number) {
+  const seg = tl.segments.find((sg) => sg.kind === "play" && p >= sg.start && p <= sg.end);
+  if (!seg || seg.kind !== "play") return 1;
+  if (!seg.boost) return seg.speed;
+  // Blend into the faster pace over a short stretch centred on `at`, so it never jolts.
+  const BLEND = 0.12;
+  const f = (p - seg.start) / (seg.end - seg.start);
+  const u = clamp((f - (seg.boost.at - BLEND / 2)) / BLEND);
+  const smooth = u * u * (3 - 2 * u);
+  return seg.speed * (1 + (seg.boost.factor - 1) * smooth);
+}
+
+/**
+ * A play leg whose pace changes along the way (a `boost`): the video runs at the local
+ * speed at every point, with the usual smooth ramps at both ends.
+ */
+function boostedLeg(tl: Timeline, a: number, b: number): Leg {
+  const { videoSpeed, ramp } = STORY.pace;
+  const N = 400;
+  // Real seconds needed to reach each sample along a → b.
+  const secs = [0];
+  let prevT = timeAt(tl, a);
+  for (let i = 1; i <= N; i++) {
+    const p = a + ((b - a) * i) / N;
+    const t = timeAt(tl, p);
+    const mid = a + ((b - a) * (i - 0.5)) / N;
+    secs.push(secs[i - 1] + Math.abs(t - prevT) / (videoSpeed * speedAt(tl, mid)));
+    prevT = t;
+  }
+  const duration = secs[N];
+  const ramped = trapezoid(Math.min(0.45, ramp / Math.max(duration, 1e-3)));
+  const ease = (u: number) => {
+    const target = ramped(clamp(u)) * duration;
+    let lo = 0, hi = N;
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (secs[m] < target) lo = m;
+      else hi = m;
+    }
+    const span = secs[hi] - secs[lo];
+    return (lo + (span > 0 ? (target - secs[lo]) / span : 0)) / N;
+  };
+  return { from: a, to: b, duration, ease };
 }
 
 export { easeInOutSine };

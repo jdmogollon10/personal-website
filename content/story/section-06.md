@@ -43,8 +43,8 @@ map:
         - title: App creator
           subtitle: Venezuela Earthquake 2026
           tab: Venezuela app
-          image: /images/apps/venezuela-earthquake-app.webp
-          imageAlt: "Home screen of the Encuéntrame app: Venezuela Earthquake 2026, “Connecting families in moments of uncertainty,” with Search for a Person and Report a Survivor buttons"
+          image: /images/apps/venezuela-earthquake-app-wide.webp
+          imageAlt: "Encuéntrame home page: “Connecting families in moments of uncertainty,” with Search for a Person and Report a Survivor buttons, a photo of a mother hugging her daughter, and counts of missing persons, survivors registered, and people reunited"
           body: |
             I built a humanitarian app to help families in Venezuela find missing loved ones. People can post missing-person and survivor profiles, share information, and report possible matches to help bring families back together.
         - title: INTAKE

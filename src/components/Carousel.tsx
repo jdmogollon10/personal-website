@@ -12,13 +12,13 @@ const SWIPE = 40; // px of horizontal travel that counts as a swipe
 
 export type Photo = { src: string; alt: string };
 
-export default function Carousel({ photos, label }: { photos: Photo[]; label: string }) {
+export default function Carousel({ photos, label, paused = false }: { photos: Photo[]; label: string; paused?: boolean }) {
   const [index, setIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [touchedAt, setTouchedAt] = useState(0);
   const [reduceMotion] = useState(() => typeof window !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const startX = useRef<number | null>(null);
+  const start = useRef<{ x: number; y: number } | null>(null);
   const n = photos.length;
 
   const go = (i: number) => setIndex(((i % n) + n) % n);
@@ -28,11 +28,11 @@ export default function Carousel({ photos, label }: { photos: Photo[]; label: st
   };
 
   useEffect(() => {
-    if (n < 2 || hovered || focused || reduceMotion) return;
+    if (n < 2 || paused || hovered || focused || reduceMotion) return;
     const wait = Math.max(INTERVAL, touchedAt + RESUME_AFTER - Date.now());
     const t = setTimeout(() => setIndex((i) => (i + 1) % n), wait);
     return () => clearTimeout(t);
-  }, [index, hovered, focused, touchedAt, n, reduceMotion]);
+  }, [index, paused, hovered, focused, touchedAt, n, reduceMotion]);
 
   if (n === 0) return null;
 
@@ -52,14 +52,15 @@ export default function Carousel({ photos, label }: { photos: Photo[]; label: st
     >
       <div
         className="carousel-stage"
-        onPointerDown={(e) => (startX.current = e.clientX)}
+        onPointerDown={(e) => (start.current = { x: e.clientX, y: e.clientY })}
         onPointerUp={(e) => {
-          if (startX.current === null) return;
-          const dx = e.clientX - startX.current;
-          startX.current = null;
-          if (Math.abs(dx) > SWIPE) interact(index + (dx < 0 ? 1 : -1));
+          if (start.current === null) return;
+          const dx = e.clientX - start.current.x, dy = e.clientY - start.current.y;
+          start.current = null;
+          // Mostly-sideways only: vertical swipes belong to the page.
+          if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy)) interact(index + (dx < 0 ? 1 : -1));
         }}
-        onPointerCancel={() => (startX.current = null)}
+        onPointerCancel={() => (start.current = null)}
       >
         {photos.map((p, i) => (
           <figure

@@ -25,6 +25,25 @@ links:                      # optional buttons
 Your text here. **Bold**, *italic*, [links](https://example.com) and lists all work.
 ```
 
+### Scene labels (`story/section-14.md`)
+A stop can list small `labels:` shown around its scene, one after another. Each has `text`,
+`at` (its group) and optional `style` (`feature` = the strongest, `quiet` = softer, hidden on
+phones). Group positions: that stop's `labels` in `src/config/story.ts`. On phones the
+labels stack just above the text box.
+
+### Photos in a story panel (`story/section-14.md`)
+`photos:` (a list of `src` + `alt`) adds a carousel under the text, working like Sports.
+`photosTitle` is its heading; `photosButton` is the short caption on phones, where the panel
+shows a "photos" button that swaps the text for the carousel. Photos live in `public/images/pif/`.
+
+### Projects in a story panel (`story/section-33.md`)
+`projects:` shows one project at a time with tabs to switch. Each has `title`, `tab` (short
+tab label), `body`, `image` + `imageAlt`, `href` and `button`. The image and the button both
+open `href` in a new tab. Images live in `public/images/research/`.
+Each project is also a scroll step: scrolling moves to the next project before the video
+continues. A project can have `workflow` instead of an image (`story/section-36.md`): a
+native diagram of its stages, whose button opens the full sequence over the scene.
+
 ### `story/section-06.md` — the "map of me" (first stop)
 The first stop shows six bubbles linked to the character: Venezuela → Miami, My Creative
 Side, Entrepreneurship, Early Investing, Interests, Sports. All their text lives under `map:`.
@@ -40,7 +59,9 @@ While a bubble is open, the story is held in place; closing it lets scrolling co
 
 ### `more/` — normal sections after the video
 Ordered by filename. `type: text`, `type: links` (cards with `label`, `href`, `tag`,
-`note`), or `type: contact` (shows the email + socials from `site.md`).
+`note`), `type: work` (a swipeable index of the story's projects: each item names a `stop`
+and `project`, and the card takes its title and preview from there), `type: about`
+(`image` + text), or `type: contact` (shows the email + socials from `site.md`).
 Each section gets an anchor from its filename, e.g. `05-contact.md` → `#contact`.
 
 ## Look of the glass panels → `src/app/globals.css`

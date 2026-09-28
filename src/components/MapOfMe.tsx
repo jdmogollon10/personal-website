@@ -137,6 +137,7 @@ export default function MapOfMe({ map }: { map: MapContent }) {
         aria-hidden={!open}
         aria-live="polite"
         data-no-story-swipe
+        data-lenis-prevent
       >
         {open && (
           <div key={open} className="map-detail-inner">
@@ -149,7 +150,7 @@ export default function MapOfMe({ map }: { map: MapContent }) {
       </section>
 
       {zoom && (
-        <div className="map-zoom" onClick={() => setZoom(null)} data-no-story-swipe role="dialog" aria-label={zoom.alt}>
+        <div className="map-zoom" onClick={() => setZoom(null)} data-no-story-swipe data-lenis-prevent role="dialog" aria-label={zoom.alt}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={zoom.src} alt={zoom.alt} />
           <button type="button" className="map-close map-zoom-close" onClick={() => setZoom(null)} aria-label="Close enlarged image">
@@ -335,7 +336,7 @@ function Projects({ projects, onZoom }: { projects: MapProject[]; onZoom: (z: Zo
         <div className="map-project-text">
           <h3 className="map-project-title">
             {p.title}
-            {p.subtitle && <span className="map-project-sub"> — {p.subtitle}</span>}
+            {p.subtitle && <span className="map-project-sub"> · {p.subtitle}</span>}
           </h3>
           {p.facts && p.facts.length > 0 && (
             <ul className="map-project-facts">

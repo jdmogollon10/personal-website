@@ -1,4 +1,4 @@
 ---
-title: Through the first door
+title: Choosing a Way Forward
 ---
-[section-08 placeholder] The first step. Where it started and what made you walk through.
+I had been interested in markets for years, but knew how much I still had to learn. Personal financial challenges made returning to school difficult. But I kept working toward it and when I finally came back, I chose finance and found a community that made me excited to keep learning

@@ -46,6 +46,9 @@ export type MapContent = {
   items: Record<MapItemId, MapItem>;
 };
 
+/** A small label placed around a stop's scene (see content/story/section-14.md). */
+export type SceneLabel = { text: string; at: string; style?: "feature" | "quiet" };
+
 export type StoryContent = {
   id: string;
   eyebrow?: string;
@@ -54,7 +57,51 @@ export type StoryContent = {
   html: string;
   links: LinkItem[];
   map?: MapContent;
+  labels: SceneLabel[];
+  photos: { src: string; alt: string }[]; // photo carousel under the text
+  photosTitle?: string;
+  photosButton?: string; // short caption on the phone "photos" button
+  lead?: string; // opening line under the title (step layout)
+  steps: { title: string; html: string; org?: string }[]; // revealed one per scroll
+  previews: { label: string; items: string[] }[]; // small "coming up" groups under the text
+  projects: ShowcaseProject[]; // projects shown one at a time, switched with tabs
+  topics: { title: string; html: string }[]; // one per scroll step; headings also switch
 };
+
+export type ShowcaseProject = {
+  title: string;
+  tab: string;
+  html: string;
+  image?: string;
+  imageAlt: string;
+  href?: string; // opens in a new tab (from the image and the button)
+  button: string;
+  workflow?: Workflow; // shown as a native diagram; the button opens the full sequence
+};
+
+export type WorkflowItem = { kind: "input" | "step" | "file"; num?: string; label: string; text: string };
+export type Workflow = { title: string; stages: { name: string; items: WorkflowItem[] }[] };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseWorkflow(raw: any): Workflow | undefined {
+  if (!raw || !Array.isArray(raw.stages)) return undefined;
+  return {
+    title: String(raw.title ?? ""),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    stages: raw.stages.map((st: any) => ({
+      name: String(st.name ?? ""),
+      items: Array.isArray(st.items)
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          st.items.map((it: any) => ({
+            kind: it.kind === "input" || it.kind === "file" ? it.kind : "step",
+            num: it.num !== undefined ? String(it.num) : undefined,
+            label: String(it.label ?? ""),
+            text: String(it.text ?? ""),
+          }))
+        : [],
+    })),
+  };
+}
 
 const MAP_IDS: MapItemId[] = ["venezuela", "creative", "entrepreneurship", "investing", "interests", "sports"];
 
@@ -97,9 +144,14 @@ function parseMap(raw: any): MapContent | undefined {
   };
 }
 
+/** A card in the "work" index: a project inside a scroll stop (`project` is 1-based). */
+export type WorkRef = { stop: string; project: number; title?: string };
+
 export type MoreSection =
   | { id: string; type: "text"; eyebrow?: string; title: string; html: string }
   | { id: string; type: "links"; eyebrow?: string; title: string; html: string; items: LinkItem[] }
+  | { id: string; type: "work"; eyebrow?: string; title: string; html: string; items: WorkRef[] }
+  | { id: string; type: "about"; eyebrow?: string; title: string; html: string; image?: string; imageAlt: string }
   | { id: string; type: "contact"; eyebrow?: string; title: string; html: string };
 
 export type FrameManifest = {
@@ -144,6 +196,60 @@ export function getStoryContent(): Record<string, StoryContent> {
         html: md(content),
         links: data.links ?? [],
         map: parseMap(data.map),
+        labels: Array.isArray(data.labels)
+          ? data.labels
+              .filter((l: { text?: string }) => l?.text)
+              .map((l: { text: string; at?: string; style?: string }) => ({
+                text: String(l.text),
+                at: String(l.at ?? "default"),
+                style: l.style === "feature" || l.style === "quiet" ? l.style : undefined,
+              }))
+          : [],
+        photos: Array.isArray(data.photos)
+          ? data.photos.filter((ph: { src?: string }) => ph?.src).map((ph: { src: string; alt?: string }) => ({ src: ph.src, alt: ph.alt ?? "" }))
+          : [],
+        topics: Array.isArray(data.topics)
+          ? data.topics.map((t: { title?: string; body?: string }) => ({ title: t.title ?? "", html: md(String(t.body ?? "")) }))
+          : [],
+        projects: Array.isArray(data.projects)
+          ? data.projects.map(
+              (pr: {
+                title?: string;
+                tab?: string;
+                body?: string;
+                image?: string;
+                imageAlt?: string;
+                href?: string;
+                button?: string;
+                workflow?: unknown;
+              }) => ({
+                title: pr.title ?? "",
+                tab: pr.tab ?? pr.title ?? "",
+                html: md(String(pr.body ?? "")),
+                image: pr.image || undefined,
+                imageAlt: pr.imageAlt ?? "",
+                href: pr.href || undefined,
+                button: pr.button ?? "Open",
+                workflow: parseWorkflow(pr.workflow),
+              }),
+            )
+          : [],
+        previews: Array.isArray(data.previews)
+          ? data.previews.map((pv: { label?: string; items?: unknown[] }) => ({
+              label: pv.label ?? "",
+              items: Array.isArray(pv.items) ? pv.items.map(String) : [],
+            }))
+          : [],
+        photosTitle: data.photosTitle,
+        photosButton: data.photosButton,
+        lead: data.lead,
+        steps: Array.isArray(data.steps)
+          ? data.steps.map((st: { title?: string; body?: string; org?: string }) => ({
+              title: st.title ?? "",
+              html: md(String(st.body ?? "")),
+              org: st.org,
+            }))
+          : [],
       },
     ]),
   );
@@ -153,6 +259,17 @@ export function getMoreSections(): MoreSection[] {
   return readDir("more").map(({ id, data, content }) => {
     const base = { id, eyebrow: data.eyebrow, title: data.title ?? "", html: md(content) };
     if (data.type === "links") return { ...base, type: "links", items: data.items ?? [] };
+    if (data.type === "work")
+      return {
+        ...base,
+        type: "work",
+        items: (data.items ?? []).map((it: { stop?: string; project?: number; title?: string }) => ({
+          stop: String(it.stop ?? ""),
+          project: Number(it.project ?? 1),
+          title: it.title,
+        })),
+      };
+    if (data.type === "about") return { ...base, type: "about", image: data.image, imageAlt: data.imageAlt ?? "" };
     if (data.type === "contact") return { ...base, type: "contact" };
     return { ...base, type: "text" };
   });

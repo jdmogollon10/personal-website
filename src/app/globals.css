@@ -82,7 +82,7 @@ html.lenis body {
   position: sticky;
   top: 0;
   height: 100lvh;
-  overflow: hidden;
+  overflow: clip; /* like hidden, but focusing a button inside can't scroll the stage sideways */
   background: var(--bg);
 }
 .story-canvas {
@@ -118,8 +118,13 @@ html.lenis body {
   position: absolute;
   max-width: calc(100vw - 48px);
 }
+/* The fade is applied to the panel inside, not this wrapper: in Chrome, opacity (or
+   will-change: opacity) on an ancestor stops the glass blur from reaching the video. */
 .panel-motion {
-  will-change: opacity, transform;
+  will-change: transform;
+}
+.panel-motion > * {
+  opacity: var(--panel-o, 0);
 }
 .story-stage[data-docked] .panel-slot:not([data-placed]) {
   left: 16px !important;
@@ -139,6 +144,1014 @@ html.lenis body {
   --glass-bg: rgba(12, 10, 8, 0.38);
   --glass-bg-top: rgba(255, 255, 255, 0.08);
   --glass-blur: 18px;
+}
+
+/* ---------- Scene labels (small words placed around a stop's scene) ---------- */
+.scene-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.scene-labels-group {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.scene-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(246, 242, 236, 0.86);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate3d(0, 8px, 0);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.scene-labels[data-shown] .scene-label {
+  opacity: 1;
+  transform: none;
+  transition-duration: 0.9s;
+  transition-delay: calc(0.2s + var(--i, 0) * 0.55s);
+}
+/* The strongest label: serif, warm, with a short line of door-light above it. */
+.scene-label--feature {
+  font-family: var(--font-serif), serif;
+  font-size: clamp(1.5rem, 2.1vw, 2.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  color: var(--fg);
+  text-shadow: 0 0 28px rgba(245, 196, 138, 0.35), 0 2px 14px rgba(0, 0, 0, 0.85);
+}
+.scene-label--feature::before {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 1px;
+  margin-bottom: 0.7rem;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(245, 196, 138, 0.8);
+}
+/* Quieter details: smaller and softer. */
+.scene-label--quiet {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: rgba(246, 242, 236, 0.5);
+}
+/* Phones / narrow windows: one stack just above the text box (bottom set by JS). */
+.scene-labels[data-docked] {
+  inset: auto 16px auto 16px; /* top set by JS: just under the scroll cue */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+  isolation: isolate;
+}
+/* a soft pool of shadow so the words read over the scene */
+.scene-labels[data-docked]::before {
+  content: "";
+  position: absolute;
+  inset: -22px -16px -18px;
+  z-index: -1;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.6), transparent 72%);
+}
+.scene-labels[data-docked] .scene-labels-group {
+  position: static;
+  align-items: center;
+  gap: 0.3rem;
+}
+.scene-labels[data-docked] .scene-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+}
+.scene-labels[data-docked] .scene-label--feature {
+  font-size: 1.3rem;
+  letter-spacing: 0;
+  margin-top: 0.15rem;
+}
+.scene-labels[data-docked] .scene-label--feature::before {
+  margin: 0 auto 0.45rem;
+}
+.scene-labels[data-docked] .scene-label--quiet,
+.scene-labels[data-docked] .scene-labels-group:not(:has(.scene-label:not(.scene-label--quiet))) {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-label,
+  .scene-labels[data-shown] .scene-label {
+    transform: none;
+    transition-delay: 0s;
+  }
+}
+
+/* ---------- Photo carousel inside a story panel (StoryPhotos) ---------- */
+.story-photos {
+  margin-top: 1.3rem;
+}
+.story-photos .panel-eyebrow {
+  margin-bottom: 0.7rem;
+}
+.story-photos .carousel {
+  margin: 0;
+}
+.story-photos .carousel-stage {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  max-height: 26vh; /* short windows: the photo shrinks inside the frame, never cropped */
+}
+.story-photos-toggle,
+.story-photos-close {
+  display: none;
+}
+/* Phones: a compact "photos" row; opening it swaps the text for the carousel. */
+.story-stage[data-docked] .story-photos {
+  margin-top: 0.8rem;
+}
+.story-stage[data-docked] .story-photos:not([data-open]) .story-photos-view,
+.story-stage[data-docked] .story-photos[data-open] .story-photos-toggle,
+.story-stage[data-docked] .glass:has(.story-photos[data-open]) > :not(.story-photos) {
+  display: none;
+}
+.story-stage[data-docked] .story-photos[data-open] {
+  margin-top: 0;
+}
+.story-stage[data-docked] .story-photos-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.6rem 0.2rem 0;
+  border: 0;
+  border-top: 1px solid var(--faint);
+  background: none;
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+}
+.story-photos-thumbs {
+  display: flex;
+  flex: none;
+}
+.story-photos-thumbs img {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1.5px solid rgba(20, 16, 12, 0.9);
+}
+.story-photos-thumbs img + img {
+  margin-left: -12px;
+}
+.story-photos-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.story-photos-label small {
+  overflow: hidden;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+.story-photos-chevron {
+  margin-left: auto;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--muted);
+}
+.story-photos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+.story-stage[data-docked] .story-photos-head .panel-eyebrow {
+  margin: 0;
+}
+.story-stage[data-docked] .story-photos-head {
+  margin-bottom: 0.8rem;
+}
+.story-stage[data-docked] .story-photos-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---------- Step layout (section-25): open text, one step per scroll ---------- */
+.steps {
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8);
+}
+.steps-title {
+  font-family: var(--font-serif), serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2rem, 2.9vw, 2.9rem);
+  line-height: 1.05;
+  color: var(--fg);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+}
+.steps-title::before {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 1px;
+  margin-bottom: 1.1rem;
+  background: var(--accent);
+  opacity: 0.8;
+}
+.steps-lead {
+  margin-top: 0.9rem;
+  max-width: 24rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.steps-list {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 2.2rem;
+  list-style: none;
+  padding: 0;
+}
+.steps-item {
+  position: relative;
+  padding-left: 1.25rem;
+  border-left: 1px solid rgba(246, 242, 236, 0.14);
+  transition: opacity 0.7s var(--ease, ease), transform 0.7s var(--ease, ease), border-color 0.7s;
+}
+.steps-item[data-state="current"] {
+  border-left-color: var(--accent);
+}
+.steps-item[data-state="past"] {
+  opacity: 0.42;
+}
+.steps-item[data-state="future"] {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+}
+.steps-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  font-family: var(--font-serif), serif;
+  font-weight: 400;
+  font-size: 1.4rem;
+  line-height: 1.2;
+  color: var(--fg);
+}
+.steps-num {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+.steps-body {
+  margin-top: 0.4rem;
+  max-width: 25rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+/* Organization: smaller and quieter than the step itself. */
+.steps-org {
+  margin-top: 0.55rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(246, 242, 236, 0.42);
+}
+/* Phones: only the current step, crossfading in place, over a soft pool of shadow. */
+.story-stage[data-docked] .steps {
+  padding: 26px 8px 4px;
+  background: radial-gradient(ellipse at 50% 60%, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.45) 55%, transparent 78%);
+}
+.story-stage[data-docked] .steps-title {
+  font-size: 1.7rem;
+}
+.story-stage[data-docked] .steps-title::before {
+  margin-bottom: 0.8rem;
+}
+.story-stage[data-docked] .steps-lead {
+  margin-top: 0.6rem;
+  font-size: 0.88rem;
+  color: rgba(246, 242, 236, 0.8);
+}
+.story-stage[data-docked] .steps-list {
+  margin-top: 1.2rem;
+}
+.story-stage[data-docked] .steps-item {
+  grid-area: 1 / 1;
+}
+.story-stage[data-docked] .steps-item[data-state="past"] {
+  opacity: 0;
+  transform: translate3d(0, -10px, 0);
+}
+.story-stage[data-docked] .steps-name {
+  font-size: 1.2rem;
+}
+.story-stage[data-docked] .steps-body {
+  font-size: 0.88rem;
+  color: rgba(246, 242, 236, 0.8);
+}
+@media (prefers-reduced-motion: reduce) {
+  .steps-item {
+    transform: none !important;
+  }
+}
+
+/* ---------- Previews: small "coming up" groups under a panel's text ---------- */
+.previews {
+  display: grid;
+  gap: 1.3rem;
+  margin-top: 1.7rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--faint);
+}
+/* They fade in one after the other once the panel has settled, and fade out (without
+   waiting) as soon as the visitor moves on. */
+.preview {
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.panel-slot[data-active] .preview {
+  opacity: 1;
+  transform: none;
+  transition-duration: 0.9s;
+  transition-delay: calc(0.45s + var(--i, 0) * 0.6s);
+}
+.preview-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.preview-items {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: rgba(246, 242, 236, 0.72);
+}
+.preview-item {
+  white-space: nowrap; /* lines break between items, never inside one */
+}
+.preview-sep {
+  margin: 0 0.3em;
+  color: rgba(246, 242, 236, 0.35);
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview {
+    transform: none !important;
+  }
+}
+
+/* ---------- Project showcase (section-33): tabs, one project at a time ---------- */
+.showcase {
+  margin-top: 1.5rem;
+}
+.showcase-tabs {
+  display: flex;
+  gap: 1.4rem;
+  border-bottom: 1px solid var(--faint);
+}
+.showcase-tab {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: -1px;
+  padding: 0 0 0.7rem;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: none;
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(246, 242, 236, 0.5);
+  cursor: pointer;
+  transition: color 0.25s, border-color 0.25s;
+}
+.showcase-tab:hover {
+  color: rgba(246, 242, 236, 0.8);
+}
+.showcase-tab[aria-selected="true"] {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+.showcase-tab:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.showcase-tab-num {
+  font-size: 0.58rem;
+  color: var(--accent);
+}
+/* Every project sits in the same grid cell: the panel keeps one height, they crossfade. */
+.showcase-stage {
+  display: grid;
+  margin-top: 1.2rem;
+}
+.showcase-project {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+  pointer-events: none;
+  transition: opacity 0.5s var(--ease, ease), transform 0.5s var(--ease, ease);
+}
+.showcase-project.is-current {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.showcase-shot {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  max-height: 32vh; /* short windows: the frame gets shorter, the image stays centred */
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #111;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+.showcase-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.6s var(--ease, ease);
+}
+.showcase-shot:hover img {
+  transform: scale(1.025);
+}
+.showcase-shot-open {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--fg);
+  font-size: 0.85rem;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.showcase-shot:hover .showcase-shot-open {
+  opacity: 1;
+}
+.showcase-title {
+  margin-top: 1.1rem;
+  font-family: var(--font-serif), serif;
+  font-weight: 400;
+  font-size: 1.45rem;
+  line-height: 1.15;
+  color: var(--fg);
+}
+.showcase-body {
+  margin-top: 0.45rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.showcase-link {
+  margin-top: 1rem;
+}
+.story-stage[data-docked] .showcase {
+  margin-top: 1.1rem;
+}
+.story-stage[data-docked] .showcase-tabs {
+  gap: 1rem;
+}
+.story-stage[data-docked] .showcase-tab {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+}
+.story-stage[data-docked] .showcase-shot {
+  aspect-ratio: 2 / 1;
+}
+.story-stage[data-docked] .showcase-title {
+  margin-top: 0.8rem;
+  font-size: 1.2rem;
+}
+.story-stage[data-docked] .showcase-body {
+  font-size: 0.86rem;
+}
+.story-stage[data-docked] .showcase-link {
+  margin-top: 0.8rem;
+}
+
+/* ---------- Workflow diagram (section-36): card preview + detail view ---------- */
+button.showcase-link {
+  color: var(--fg);
+  font-family: inherit;
+  cursor: pointer;
+}
+.showcase-shot--diagram {
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(245, 196, 138, 0.1), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 24px),
+    #0d0a08;
+  transition: border-color 0.25s;
+}
+.showcase-shot--diagram:hover,
+.showcase-shot--diagram:focus-visible {
+  border-color: rgba(245, 196, 138, 0.45);
+  outline: none;
+}
+.wf-preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 0 clamp(12px, 4%, 22px);
+}
+.wf-flow {
+  display: flex;
+  align-items: stretch;
+}
+.wf-node {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.7rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 196, 138, 0.3);
+  background: rgba(255, 255, 255, 0.035);
+}
+.wf-node-num {
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+.wf-node-name {
+  font-family: var(--font-serif), serif;
+  font-size: 1rem;
+  line-height: 1.15;
+  color: var(--fg);
+}
+.wf-arrow {
+  position: relative;
+  flex: 0 0 14px;
+  align-self: center;
+  height: 1px;
+  background: rgba(245, 196, 138, 0.55);
+}
+.wf-arrow::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -3px;
+  border: 3.5px solid transparent;
+  border-left: 5px solid rgba(245, 196, 138, 0.8);
+  border-right: 0;
+}
+.wf-preview-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(246, 242, 236, 0.5);
+}
+.wf-preview-open {
+  color: rgba(246, 242, 236, 0.65);
+  transition: color 0.25s;
+}
+.showcase-shot--diagram:hover .wf-preview-open {
+  color: var(--accent);
+}
+.story-stage[data-docked] .wf-node {
+  padding: 0.55rem 0.4rem;
+}
+.story-stage[data-docked] .wf-node-name {
+  font-size: 0.8rem;
+}
+.story-stage[data-docked] .wf-arrow {
+  flex-basis: 8px;
+}
+.story-stage[data-docked] .wf-arrow::after {
+  display: none;
+}
+.story-stage[data-docked] .wf-preview {
+  gap: 0.7rem;
+}
+
+/* Detail view: over the scene, above every panel. */
+.wf-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  /* backwards, not both: a lingering opacity effect would stop the sheet's glass blur */
+  animation: wf-in 0.35s var(--ease, ease) backwards;
+}
+@keyframes wf-in {
+  from {
+    opacity: 0;
+  }
+}
+.wf-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+}
+.wf-sheet {
+  position: relative;
+  width: min(1080px, 100%);
+  max-height: calc(100% - 16px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.wf-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.8rem;
+}
+.wf-head .panel-eyebrow {
+  margin-bottom: 0.6rem;
+}
+.wf-title {
+  font-family: var(--font-serif), serif;
+  font-weight: 400;
+  font-size: clamp(1.6rem, 2.4vw, 2.3rem);
+  line-height: 1.1;
+  color: var(--fg);
+}
+.wf-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.wf-close:hover,
+.wf-close:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+}
+.wf-stages {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.6rem;
+  list-style: none;
+  padding: 0;
+}
+.wf-stage {
+  position: relative;
+}
+/* Arrow from each stage to the next. */
+.wf-stage + .wf-stage::before {
+  content: "";
+  position: absolute;
+  left: -1.35rem;
+  top: 0.55rem;
+  width: 1.1rem;
+  height: 1px;
+  background: rgba(245, 196, 138, 0.55);
+}
+.wf-stage-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding-bottom: 0.8rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(245, 196, 138, 0.35);
+  font-family: var(--font-serif), serif;
+  font-size: 1.2rem;
+  line-height: 1.15;
+  color: var(--fg);
+}
+.wf-stage-num {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+.wf-items {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+  padding: 0;
+}
+.wf-item {
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+}
+.wf-item--input {
+  border-style: dashed;
+  background: transparent;
+}
+.wf-item--file {
+  border-color: rgba(245, 196, 138, 0.28);
+}
+.wf-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  color: var(--fg);
+}
+.wf-item--file .wf-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.74rem;
+  word-break: break-all;
+}
+.wf-num {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.wf-text {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.wf-sub {
+  margin-top: 0.4rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+/* Phones and narrow windows: one column, stages joined by a vertical line. */
+.story-stage[data-docked] .wf-overlay {
+  padding: 12px;
+}
+.story-stage[data-docked] .wf-sheet {
+  max-height: calc(100% - 8px);
+  padding: 22px 18px;
+}
+.story-stage[data-docked] .wf-stages {
+  grid-template-columns: 1fr;
+  gap: 1.4rem;
+}
+.story-stage[data-docked] .wf-stage + .wf-stage::before {
+  display: block;
+  left: 0.3rem;
+  top: -1.3rem;
+  width: 1px;
+  height: 1.2rem;
+}
+.story-stage[data-docked] .wf-title {
+  font-size: 1.45rem;
+}
+@media (max-width: 1000px) {
+  .wf-stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wf-stage:nth-child(odd)::before {
+    display: none;
+  }
+}
+
+/* ---------- Topic picker (section-41): pick a heading, read it below ---------- */
+.topics {
+  margin-top: 1.5rem;
+}
+.topics-list {
+  display: grid;
+  border-top: 1px solid var(--faint);
+}
+.topic {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.85rem 0.1rem;
+  border: 0;
+  border-bottom: 1px solid var(--faint);
+  background: none;
+  color: rgba(246, 242, 236, 0.62);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.25s;
+}
+.topic:hover,
+.topic[aria-selected="true"] {
+  color: var(--fg);
+}
+.topic:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.topic-num {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+.topic-title {
+  flex: 1;
+  font-family: var(--font-serif), serif;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+/* A small plus that becomes a gold dash on the chosen topic. */
+.topic-mark {
+  position: relative;
+  flex: none;
+  align-self: center;
+  width: 10px;
+  height: 10px;
+}
+.topic-mark::before,
+.topic-mark::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 10px;
+  height: 1px;
+  background: currentColor;
+  transition: transform 0.3s var(--ease, ease), background 0.3s;
+}
+.topic-mark::after {
+  transform: rotate(90deg);
+}
+.topic[aria-selected="true"] .topic-mark::before,
+.topic[aria-selected="true"] .topic-mark::after {
+  background: var(--accent);
+  transform: none;
+}
+/* Every text sits in the same cell: the space fits the longest, so nothing shifts. */
+.topics-stage {
+  display: grid;
+  margin-top: 1.1rem;
+}
+.topics-stage > * {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+  transition: opacity 0.45s var(--ease, ease), transform 0.45s var(--ease, ease);
+  pointer-events: none;
+}
+.topics-stage > .is-current {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+/* Phones: a slightly tighter panel so the character stays in view above it. */
+.story-stage[data-docked] .glass:has(.topics) .panel-title {
+  font-size: 1.6rem;
+  margin-bottom: 0.6rem;
+}
+.story-stage[data-docked] .glass:has(.topics) .prose {
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.story-stage[data-docked] .topics {
+  margin-top: 1.1rem;
+}
+.story-stage[data-docked] .topic {
+  padding: 0.6rem 0.1rem;
+}
+.story-stage[data-docked] .topic-title {
+  font-size: 1.05rem;
+}
+.story-stage[data-docked] .topics-stage {
+  margin-top: 0.8rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .topics-stage > * {
+    transform: none !important;
+  }
+}
+
+/* ---------- "Scroll" cue at the top of the story (every settled stop) ---------- */
+.story-cue {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em; /* keeps the spaced-out word visually centred */
+  text-transform: uppercase;
+  color: rgba(246, 242, 236, 0.55);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.story-cue[data-show] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 0.6s; /* appears once the panel has settled */
+}
+.story-cue span {
+  width: 1px;
+  height: 14px;
+  background: linear-gradient(rgba(255, 255, 255, 0.7), transparent);
+  animation: cue 2.2s ease-in-out infinite;
+  transform-origin: top;
+}
+
+/* ---------- Phones: panels taller than the screen scroll inside themselves ---------- */
+.story-stage[data-docked] .panel-slot:not(.panel-slot--feature) .glass {
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.story-stage[data-docked] .panel-slot:not(.panel-slot--feature) .glass::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- Phones, mobile.fill: Learning by Doing split top / bottom ---------- */
+.panel-slot[data-fill] .panel-motion {
+  height: 100%;
+}
+.story-stage[data-docked] .panel-slot[data-fill] .steps {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0;
+  background: none;
+}
+.story-stage[data-docked] .panel-slot[data-fill] .steps-head {
+  position: relative;
+  max-width: 17rem;
+  padding: 26px 4px 0; /* clears the scroll cue */
+  isolation: isolate;
+}
+.story-stage[data-docked] .panel-slot[data-fill] .steps-head::before,
+.story-stage[data-docked] .panel-slot[data-fill] .steps-list::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+.story-stage[data-docked] .panel-slot[data-fill] .steps-head::before {
+  inset: -30px -60px -30px -40px;
+  background: radial-gradient(ellipse at 30% 45%, rgba(0, 0, 0, 0.7), transparent 70%);
+}
+.story-stage[data-docked] .panel-slot[data-fill] .steps-list {
+  position: relative;
+  margin-top: 0;
+  padding: 0 4px 6px;
+  isolation: isolate;
+}
+.story-stage[data-docked] .panel-slot[data-fill] .steps-list::before {
+  inset: -40px -24px -20px;
+  background: radial-gradient(ellipse at 50% 60%, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.45) 55%, transparent 80%);
 }
 
 /* ---------- Title at 00:00 (same typography as the portfolio sections) ---------- */
@@ -187,10 +1200,19 @@ html.lenis body {
   background: linear-gradient(160deg, var(--glass-bg-top), var(--glass-bg) 45%);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), var(--glass-glow), inset 0 1px 0 var(--glass-highlight);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  /* Prefixed line first: the CSS build drops the standard one if it comes before it. */
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
+/* Deeper variant for busy, brightly lit frames (set glass: "deep" on the stop). */
+.glass--deep,
+.story-stage[data-docked] .glass--deep {
+  --glass-bg: rgba(10, 8, 6, 0.74);
+  --glass-bg-top: rgba(26, 20, 14, 0.74);
+  --glass-blur: 20px;
+  --glass-border: rgba(255, 255, 255, 0.16);
+}
 /* Smoky variant for panels over bright frames (set glass: "dark" on the stop). */
 .glass--dark {
   --glass-bg: rgba(14, 10, 6, 0.46);
@@ -425,8 +1447,8 @@ html.lenis body {
   border-radius: 999px;
   border: 1px solid var(--glass-border);
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   white-space: nowrap;
   transition: background 0.25s, border-color 0.25s;
 }
@@ -597,7 +1619,7 @@ html.lenis body {
   border-radius: 10px;
   overflow: hidden;
   background: #000;
-  touch-action: none; /* horizontal swipes go to the carousel */
+  touch-action: pan-y; /* sideways swipes go to the carousel; vertical ones scroll its card */
   user-select: none;
   -webkit-user-select: none;
 }
@@ -637,8 +1659,8 @@ html.lenis body {
   border-radius: 50%;
   border: 1px solid var(--glass-border);
   background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: var(--fg);
   font-size: 1.5rem;
   line-height: 1;
@@ -768,6 +1790,11 @@ html.lenis body {
 }
 .map-project--wide .map-project-img {
   border-radius: 8px;
+  /* short screens: scale the whole screenshot down (never cropped) so the card still fits */
+  width: auto;
+  max-width: 100%;
+  max-height: 27vh;
+  margin: 0 auto;
 }
 .map-project-zoom {
   position: absolute;
@@ -829,8 +1856,8 @@ html.lenis body {
   place-items: center;
   padding: 5vh 5vw;
   background: rgba(0, 0, 0, 0.78);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   pointer-events: auto;
   cursor: zoom-out;
   z-index: 5;
@@ -1077,8 +2104,9 @@ html.lenis body {
   top: auto;
   bottom: 140px; /* above the three rows of bubbles */
   width: auto;
-  max-height: 40%;
-  padding: 20px;
+  /* grows upward with its content, up to just under the scroll cue, then scrolls inside */
+  max-height: calc(100% - 140px - 44px);
+  padding: 22px 20px;
   transform: translateY(14px);
   --glass-bg: rgba(10, 8, 6, 0.66);
   --glass-bg-top: rgba(24, 18, 12, 0.7);
@@ -1216,6 +2244,153 @@ html.lenis body {
   transform: translate(2px, -2px);
 }
 
+/* Selected work: a swipeable index of the story's projects. */
+.work {
+  margin-top: 2.4rem;
+}
+.work-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(80%, 300px);
+  column-gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.work-track::-webkit-scrollbar {
+  display: none;
+}
+.work-item {
+  scroll-snap-align: start;
+}
+.work-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.work-card:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 6px;
+  border-radius: var(--glass-radius);
+}
+.work-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid var(--faint);
+  background: #111;
+  transition: border-color 0.25s;
+}
+.work-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease, ease);
+}
+.work-card:hover .work-thumb {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.work-card:hover .work-thumb img {
+  transform: scale(1.03);
+}
+/* Card-size diagram: a little smaller than in the story panel. */
+.work-thumb .wf-node {
+  padding: 0.5rem 0.4rem;
+}
+.work-thumb .wf-node-name {
+  font-size: 0.78rem;
+}
+.work-thumb .wf-arrow {
+  flex-basis: 8px;
+}
+.work-thumb .wf-arrow::after {
+  display: none;
+}
+.work-thumb .wf-preview {
+  gap: 0.7rem;
+}
+.work-meta {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(246, 242, 236, 0.5);
+}
+.work-num {
+  color: var(--accent);
+}
+.work-title {
+  font-family: var(--font-serif), serif;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  color: var(--fg);
+}
+.work-arrow {
+  display: inline-block;
+  color: var(--muted);
+  transition: transform 0.25s, color 0.25s;
+}
+.work-card:hover .work-arrow,
+.work-card:focus-visible .work-arrow {
+  transform: translateX(3px);
+  color: var(--accent);
+}
+.work-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+.carousel-btn.work-btn {
+  position: static;
+  margin: 0;
+}
+.work-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* About: photo beside the text; stacked on narrow screens. */
+.about {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  gap: clamp(1.6rem, 5vw, 4rem);
+  align-items: center;
+  margin-top: 1rem;
+}
+.about-photo {
+  width: 100%;
+  height: auto; /* natural 3:4 proportions, never stretched or cropped */
+  border-radius: 12px;
+  border: 1px solid var(--faint);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.about-text {
+  font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+  line-height: 1.7;
+}
+@media (max-width: 700px) {
+  .about {
+    grid-template-columns: 1fr;
+  }
+  .about-photo {
+    max-width: 280px;
+  }
+}
+
 .contact {
   margin-top: 2.4rem;
   display: flex;
@@ -1244,12 +2419,41 @@ html.lenis body {
 }
 
 .footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
   max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 0 3rem;
   border-top: 1px solid var(--faint);
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.back-to-start {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.back-to-start span {
+  display: inline-block;
+  margin-left: 0.3em;
+  transition: transform 0.25s;
+}
+.back-to-start:hover,
+.back-to-start:focus-visible {
+  color: var(--fg);
+  outline: none;
+}
+.back-to-start:hover span,
+.back-to-start:focus-visible span {
+  transform: translateY(-2px);
 }
 
 .missing-frames {

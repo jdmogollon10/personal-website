@@ -13,7 +13,9 @@ export default function GlassPanel({
   style?: CSSProperties;
 }) {
   return (
-    <div className={`glass ${className}`} style={style}>
+    // data-story-scroll: on phones a panel taller than the screen scrolls itself first
+    // (data-lenis-prevent keeps the smooth-scroll library from swallowing that swipe).
+    <div className={`glass ${className}`} style={style} data-story-scroll data-lenis-prevent>
       {children}
     </div>
   );
